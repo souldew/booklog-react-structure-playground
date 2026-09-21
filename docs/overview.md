@@ -8,19 +8,13 @@ React アプリの **URL 設計と画面の分け方**を、動くアプリで�
 
 ---
 
-## 指針の置き場所
+## 規約の置き場所
 
-構成の指針そのものは別リポジトリにある。このリポジトリはその**適用例**にあたる。
+ディレクトリ構成の規約は [directory-conventions.md](directory-conventions.md) にある。
+このリポジトリの画面は、その規約を**実際の URL と画面に適用した例**にあたる。
 
-| 文書 | 場所 |
-|---|---|
-| ディレクトリ構成の指針 | `../react-suspense-playground/docs/directory-structure.md` |
-| 画面と URL の設計 | `../react-suspense-playground/docs/screen-and-url-design.md` |
-
-**指針はこちらに複製しない。** 二重管理になるため参照だけにとどめ、
-適用した結果と指針から外した点だけをこのリポジトリの docs に書く。
-
-将来どちらかに寄せる可能性はあるが、現時点では分離したままにする。
+規約そのものは directory-conventions.md に書き、他の docs には
+適用した結果と、規約から外した点だけを書く。
 
 ---
 
@@ -30,11 +24,11 @@ React アプリの **URL 設計と画面の分け方**を、動くアプリで�
 
 | 論点 | 現れる場所 |
 |---|---|
-| 生成された API 型を features に持ち込まない | `web` 側の mapper |
+| 生成された API 型を Presentational に渡さない | `web` 側の mapper |
 | 更新後にキャッシュを無効化しないと一覧が古いまま | `/books` のトグルと `revalidatePath` |
 | コレクションと単一リソースの書き分け | `/books/[bookId]/notes` と `/books/[bookId]/progress` |
 | 画面の性質を CRUD から導かない | `/dashboard` `/settings/*` |
-| URL のセグメント順と feature 名が一致しない | `/settings/notifications` → `notification-settings` |
+| view 名は URL ではなく業務ドメインで決める | `/books/[bookId]/notes` → `book-note-list` |
 | 作成と編集で URL を分ける | `/books/new` と `/books/[bookId]/edit` |
 | 取得の有無が組み立て層に出る | 同上。作成側には Container が無い |
 | 作成と編集で Presentational を共有する | `BookForm` |
@@ -43,8 +37,9 @@ React アプリの **URL 設計と画面の分け方**を、動くアプリで�
 | セクション寿命の Provider | `/books` の絞り込み条件 |
 | Suspense 境界の粒度 | `/dashboard` のパネル |
 
-画面の一覧と、それぞれの feature への写像は [screens.md](screens.md) にある。
+画面の一覧と、それぞれの view への写像は [screens.md](screens.md) にある。
 API と DB の構成は [backend.md](backend.md) にある。
+使う技術の一覧は [tech-stack.md](tech-stack.md) にある。
 
 ---
 
@@ -58,7 +53,7 @@ API と DB の構成は [backend.md](backend.md) にある。
 | 1 | `/books` `/books/[bookId]` | list / detail、絞り込み Provider、インライン更新 |
 | 2 | `/books/new` `/books/[bookId]/edit` | form の共有と、組み立て層に出る差 |
 | 3 | `/books/[bookId]/notes` `/books/[bookId]/progress` | 複数形と単数形の対比 |
-| 4 | `/dashboard` | 複数の Suspense 境界、`domains/` へのパネル集約 |
+| 4 | `/dashboard` | 複数の Suspense 境界、`features/` へのパネル集約 |
 | 5 | `/settings/*` | タブ分割、レイアウトの責務 |
 
 段階 2 が主目的。段階 1 はその前提を整えるためにある。
@@ -80,7 +75,7 @@ API と DB の構成は [backend.md](backend.md) にある。
 | API の実装品質 | ページネーション・N+1・トランザクションは扱わない |
 
 **永続化はスコープ内**にする。Next.js とは別プロセスの API を立て、SQLite に保存する。
-指針の主張のうち、mapper・キャッシュ無効化・送信されない値といったものは
+確かめたい主張のうち、mapper・キャッシュ無効化・送信されない値といったものは
 **API 境界が実在しないと検証できない**ため。理由と構成は [backend.md](backend.md) にある。
 
 レイテンシは実際の値に寄せず、**ローディング表示を必ず目視できる**ように

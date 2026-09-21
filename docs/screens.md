@@ -1,7 +1,8 @@
 # 画面と URL
 
-このアプリが持つ画面の一覧と、feature への写像。
-判断の根拠は `../react-suspense-playground/docs/screen-and-url-design.md` にある。
+このアプリが持つ画面の一覧と、view への写像。
+URL の切り方と view 名の付け方は [directory-conventions.md](directory-conventions.md) に従い、
+そこから外れる判断はこの文書の各節に根拠を書く。
 
 ---
 
@@ -55,32 +56,39 @@ app/books/[bookId]/
 
 ---
 
-## 3. feature への写像
+## 3. view への写像
 
-| URL | feature | ページコンポーネント |
+画面は `views/{domain}-{detail}-{suffix}/` に置く。`{domain}` の決め方は
+[directory-conventions.md](directory-conventions.md) の views の節に従う。
+
+このリポジトリでの適用は次のとおり。
+
+| | 適用 |
+|---|---|
+| 入れ子のドメイン | Book の中に BookNote と BookProgress がある。`book-note-list` `book-note-form` `book-progress-form` が独立したドメインとして名前を持つ |
+| `{suffix}` | §1 の性質が `list` `detail` `form` のときだけ付ける。`dashboard` `settings` は CRUD に対応しないので付けない |
+
+| URL | view | ページコンポーネント |
 |---|---|---|
-| `/dashboard` | `reading-dashboard` | `ReadingDashboardPage` |
+| `/dashboard` | `dashboard` | `DashboardPage` |
 | `/books` | `book-list` | `BookListPage` |
 | `/books/new` `/books/[bookId]/edit` | `book-form` | `BookFormPage` |
 | `/books/[bookId]` | `book-detail` | `BookDetailPage` |
 | `/books/[bookId]/notes` | `book-note-list` | `BookNoteListPage` |
 | `.../notes/new` `.../notes/[noteId]/edit` | `book-note-form` | `BookNoteFormPage` |
-| `/books/[bookId]/progress` | `reading-progress-form` | `ReadingProgressFormPage` |
-| `/settings/profile` | `profile-settings` | `ProfileSettingsPage` |
-| `/settings/notifications` | `notification-settings` | `NotificationSettingsPage` |
+| `/books/[bookId]/progress` | `book-progress-form` | `BookProgressFormPage` |
+| `/settings/profile` | `settings-profile` | `SettingsProfilePage` |
+| `/settings/notifications` | `settings-notifications` | `SettingsNotificationsPage` |
 
-`book-form` と `book-note-form` は、**1 feature が作成と編集の2画面を受け持つ**。
+`book-form` と `book-note-form` は、**1 view が作成と編集の2画面を受け持つ**。
 組み立て層だけが2つに分かれる。
 
 ```
-features/book-form/pages/
+views/book-form/pages/
 ├── BookFormPage.tsx                  骨格。両方で共有する
 ├── BookNewFormPageContainer.tsx      /books/new から呼ぶ
 └── BookEditFormPageContainer.tsx     /books/[bookId]/edit から呼ぶ
 ```
-
-`/settings/notifications` の feature が `notification-settings` になり、
-**URL のセグメント順と feature 名が一致しない**例になっている。
 
 ---
 
@@ -102,9 +110,9 @@ SQLite に永続化する。テーブル定義とエンドポイントは [backe
 | `totalPages` | `number` | |
 | `createdAt` | `string` | ISO 8601 |
 
-### ReadingProgress
+### BookProgress
 
-Book と 1:1。単一リソースにする根拠。
+Book と 1:1。単一リソースにする根拠。Book の中の入れ子ドメインで、BookNote と同じ形。
 
 | フィールド | 型 |
 |---|---|
@@ -159,7 +167,9 @@ Book と 1:N。コレクションにする根拠。
 
 | 対象 | 定義 | マウント | 寿命 |
 |---|---|---|---|
-| 本の絞り込み条件 | `domains/book/providers/` | `app/books/layout.tsx` | セクション |
+| 本の絞り込み条件 | `features/book/providers/` | `app/books/layout.tsx` | セクション |
+
+`book-list` と `book-detail` の両方の view から読むので、view ではなく `features/book/` に置く。
 
 一覧 → 詳細 → 一覧 と往復しても条件が残ることを確かめる。
 アプリ内のリンクはすべて `next/link` にする。フル再読み込みでは残らないため。
@@ -178,5 +188,5 @@ story で繋がりを検証できなくなる。
 | `/books` 配下のレイアウト | 絞り込み条件の Provider のみ。UI は持たない |
 | `/settings` 配下のレイアウト | タブバー（`/settings/profile` `/settings/notifications`） |
 
-`/settings` 配下のタブバーがレイアウトにあることで、**タブであることを feature 側が
-知らなくてよい**状態になる。`notification-settings` は自分がタブの中身だと知らない。
+`/settings` 配下のタブバーがレイアウトにあることで、**タブであることを view 側が
+知らなくてよい**状態になる。`settings-notifications` は自分がタブの中身だと知らない。

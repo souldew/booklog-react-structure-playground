@@ -6,10 +6,10 @@ Next.js とは別プロセスの API を立て、SQLite に永続化する。
 
 ## 1. なぜ分離するか
 
-フロントの指針には、**API 境界が実在しないと検証できない主張**がいくつかある。
-インメモリの固定データを features から直接読む形にすると、これらが全部消える。
+フロント側で確かめたい主張には、**API 境界が実在しないと検証できないもの**がいくつかある。
+インメモリの固定データを view から直接読む形にすると、これらが全部消える。
 
-| 指針の主張 | 境界が無いと |
+| 主張 | 境界が無いと |
 |---|---|
 | Presentational は API の型ではなくフォームの値の型を持つ | API の型が存在しないので mapper に仕事が無い |
 | API スキーマの変更は mapper で止まる | 変更が起きようが無い |
@@ -68,12 +68,12 @@ api/
 | テーブル | 主キー | 備考 |
 |---|---|---|
 | `books` | `id` | |
-| `reading_progress` | `book_id` | **books と 1:1。独自の id を持たない** |
+| `book_progress` | `book_id` | **books と 1:1。独自の id を持たない** |
 | `book_notes` | `id` | books と 1:N |
 | `profile_settings` | 単一行 | |
 | `notification_settings` | 単一行 | |
 
-`reading_progress` が `book_id` を主キーに持つことが、
+`book_progress` が `book_id` を主キーに持つことが、
 **URL 側で `/books/[bookId]/progress` に `[id]` が付かない理由**と一致する。
 単一リソースであることがテーブル定義に出ている状態にしておく。
 
@@ -150,12 +150,12 @@ api/  zod スキーマ  →  openapi.yaml  →  web/src/generated/
 | `pnpm openapi` | `openapi.yaml` |
 | `web` の生成 | `web/src/generated/` |
 
-生成した型を **features から直接 import しない。** `web` 側に mapper を置き、
-生成型からドメイン型・フォームの値の型へ変換する。この境界を持つことが目的なので、
-省略すると分離した意味が無くなる。
+生成した型を **Presentational に渡さない。** Container が mapper を通し、
+生成型からドメイン型・フォームの値の型へ変換してから渡す。この境界を持つことが目的なので、
+省略すると分離した意味が無くなる。`apis/` や Container が生成型を import するのはよい。
 
 ```
-生成型 ── mapper ──> ドメイン型 ──> Presentational
+生成型 ──> Container ── mapper ──> ドメイン型 ──> Presentational
 ```
 
 ### Hono RPC を使わない理由
@@ -171,17 +171,23 @@ mapper と型の境界という論点が消える。
 
 ## 7. 通信経路
 
-**ブラウザから `api` を直接叩かない。** Server Component と Server Action からだけ
-呼ぶことで、CORS の設定が要らなくなる。
+既定の経路は Server Component と Server Action。クライアント取得は
+`XxxClientContainer` の構成を試す画面だけで使い、**直接叩く形と BFF を挟む形の両方**を見せる。
 
 | 経路 | 用途 |
 |---|---|
-| Server Component → `api` | 画面の取得 |
-| Server Action → `api` | 作成・更新・削除 |
-| Client Component → `web/app/api/` → `api` | クライアント取得を試す画面だけ |
+| Server Component → `api` | 画面の取得。既定 |
+| Server Action → `api` | 作成・更新・削除。既定 |
+| Client Component → `api` | クライアント取得を試す画面。ブラウザから直接叩く |
+| Client Component → `web/app/api/` → `api` | 同上。Route Handler を BFF として挟む |
 
-3つ目は Route Handler を BFF として挟む形。クライアント取得と
-`XxxClientContainer` の構成を試すときにだけ使い、既定の経路にはしない。
+3つ目と4つ目を並べることで、**BFF を挟むと何が変わるか**を比べられる。
+直接叩く形はブラウザに `api` の URL と CORS が露出し、BFF を挟む形は `web` 側に
+中継のコードが増える。どちらを既定にするかは判断の対象なので、両方を実物にしておく。
+
+ブラウザから直接叩くために、`api` に Hono の `cors()` middleware を置き、
+`http://localhost:3000` からのリクエストを許す。BFF だけなら不要だった設定で、
+直接叩く経路のコストとして見える箇所になる。
 
 更新後は Server Action の中で `revalidatePath` を呼ぶ。
 **呼び忘れると一覧が古いまま残る**ので、その状態も含めて確認できる。
@@ -211,4 +217,5 @@ pnpm openapi         # openapi.yaml の出力と web 側の型生成
 }
 ```
 
-`web` は `API_BASE_URL` で `api` を参照する。`web/.env.local` に置く。
+`web` は `API_BASE_URL`（サーバー側）と `NEXT_PUBLIC_API_BASE_URL`（ブラウザ側）で `api` を参照する。
+どちらも `web/.env.local` に置く。

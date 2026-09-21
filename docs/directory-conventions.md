@@ -79,6 +79,16 @@ suffix は Rails のアクションに対応する語を使う。
 | new / edit | `form` | 2 つの URL を 1 つの view で受け持つ |
 | 単数リソース (resource) の show | なし | suffix を省略する |
 
+`{domain}` は、その画面が扱う業務ドメインの名前。URL とおおむね対応するが、
+URL のセグメントから形式的に決まるものではなく、業務ロジックの区切りで決める。
+`{detail}` は、同じドメインに同じ suffix の画面が複数あるときの区別で、無ければ省略する。
+
+ドメインは入れ子になることがある。Course の中に CourseLesson がある場合、CourseLesson は
+それ自体が 1 つのドメインなので、view 名は `course-lesson-detail`、ページは `CourseLessonDetailPage` になる。
+URL が `/course/11/courseLesson/3` であっても、セグメントを連結した `course-course-lesson-detail` にはしない。
+逆に URL が `/course/11/lesson/3` で `lesson` という語しか現れなくても、業務上のドメインが CourseLesson なら
+view 名は `course-lesson-detail` にする。URL の語を短くしているだけで、ドメインの名前が変わるわけではない。
+
 new と edit は最初から同じコンポーネントを使い回す可能性が高いので、同じ view の中で完結させる。
 分けてしまうと「フォーム」という大きな単位が features に流れてしまう。
 大きく異なるようになったら、その時点でディレクトリを切ればよい。
