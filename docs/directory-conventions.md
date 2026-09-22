@@ -301,9 +301,15 @@ API レスポンスの型（生成型）と画面で使う型（ドメイン型�
 | slice 名・カテゴリ名 | kebab-case | `user-suspense-list` `components` |
 | コンポーネント | PascalCase | `UserListPage.tsx` |
 | それ以外のファイル | camelCase | `useUserFilter.ts` `filterUsers.ts` |
+| story | 対象と同名 + `.stories.tsx` | `UserRow.stories.tsx` |
+| テスト | 対象と同名 + `.test.ts` | `filterUsers.test.ts` |
 | shadcn 管理下 | CLI の流儀に従う | `components/ui/table.tsx` |
 
 ### story とテスト
 
 実装とコロケーションする。`*.test.ts` は node、story は browser で動かす。
 Container の story は書かず、msw も使わない。story は Presenter だけで完結させる。
+
+story とテストで使うデータは slice の `fixtures/` に置く (`features/book/fixtures/books.ts`)。
+`<tr>` や `<tbody>` を返すコンポーネントは、story の `decorators` で `Table` に包む。
+props で受け取る関数は `storybook/test` の `fn()` を渡し、実装は import しない。

@@ -5,6 +5,7 @@
     "dev": "pnpm -r --parallel dev",
     "db:reset": "pnpm --filter api db:reset",
     "openapi": "pnpm --filter api openapi && pnpm --filter web codegen",
+    "test": "pnpm -r test",
     "lint": "oxlint",
     "format": "oxfmt",
     "format:check": "oxfmt --check"

@@ -140,3 +140,14 @@ Storybook と Vitest を採用する。[directory-conventions.md](directory-conv
 
 msw は入れない。story は Presentational で完結させ、通信をモックしない。
 Storybook は `web` にだけ置く。`api` は Vitest のみ。
+
+| 決めたこと | 内容 |
+|---|---|
+| Storybook の framework | `@storybook/nextjs-vite`。`next/link` `next/font` `next/navigation` を Storybook 側で差し替えてくれる |
+| addon | `@storybook/addon-docs` と `@storybook/addon-vitest` だけ。Chromatic は使わない |
+| Vitest の版 | **4 系に固定する。** `@storybook/addon-vitest` 10.6 の peer が `vitest ^3 || ^4` で、5 系を受け付けない |
+| 設定ファイル | `web/vitest.config.mts`。`web/package.json` は `"type": "module"` ではないので、`.ts` だと Vite が CJS として読んで警告を出す |
+| project | `unit` (node、`src/**/*.test.ts`) と `storybook` (Playwright の chromium、headless) の 2 つ |
+| `@/` の解決 | `vitest.config.mts` の `resolve.alias` で `src/` に向ける。storybook project は framework が tsconfig の paths を読むが、unit project には効かないため |
+| story の実行 | `pnpm test` で unit と story を両方回す。ブラウザで見るときは `pnpm storybook` |
+| 差し替え | props で受け取る関数は `storybook/test` の `fn()` を渡す。戻り値の型が union のときは `fn(async (): Promise<ActionResult> => ...)` のように注釈する |

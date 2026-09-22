@@ -219,6 +219,56 @@ HTML に本のタイトル、絞り込み欄、読了トグルのボタン、詳
 
 ---
 
+## 9. Storybook と Vitest
+
+```bash
+cd web
+pnpm dlx storybook@10.6.0 init --type nextjs --builder vite --features docs test --yes --no-dev --package-manager pnpm
+```
+
+`--type nextjs --builder vite` で framework が `@storybook/nextjs-vite` になり、`--features test` で
+`@storybook/addon-vitest` と Vitest、Playwright (chromium) が入る。`.storybook/main.ts` `.storybook/preview.tsx`
+`vitest.config.ts` `vitest.shims.d.ts` が生成される。
+
+### 生成後に直したもの
+
+| 生成物 | 対処 |
+|---|---|
+| `src/stories/` のサンプル | 削除 |
+| `@chromatic-com/storybook` | addon と依存から外した。使わない |
+| `@vitest/coverage-v8` | 依存から外した。必要になったら入れる |
+| `vitest` `vite` `playwright` `@vitest/browser-playwright` が `latest` | 版を固定。特に vitest は 5 系が入るが `@storybook/addon-vitest` の peer が `^3 || ^4` なので 4 系に落とした |
+| `vitest.config.ts` | `.mts` に改名。`package.json` が `"type": "module"` ではないため、`.ts` だと Vite が CJS 扱いで警告を出す |
+| `.storybook/main.ts` の `stories` | `../src/**/*.stories.tsx` だけにした。mdx は書かない |
+| `.storybook/preview.tsx` | `src/app/globals.css` を import して Tailwind と shadcn のテーマを当てる |
+| `vitest.config.mts` | `unit` project (node、`src/**/*.test.ts`) を追加し、`resolve.alias` で `@/` を `src/` に向けた |
+| `package.json` | `test` (`vitest run`) と `test:watch` を追加。ルートにも `test` (`pnpm -r test`) を追加 |
+| `.gitignore` | `storybook-static/` と `*storybook.log` を追加 |
+
+### 最初に書いたもの
+
+| 種別 | ファイル |
+|---|---|
+| fixtures | `features/book/fixtures/books.ts`。状態ごとに 1 冊 |
+| story | `BookStatusBadge` `BookRow` (更新失敗の play 付き) `BookRowsSkeleton` |
+| test | `apis/mappers/mapBookStatus` `apis/mappers/toBook` `lib/filterBooks` `shared/lib/formatDate` |
+
+### 確認
+
+```bash
+pnpm --filter web test              # unit と storybook の 2 project。7 files / 15 tests
+pnpm --filter web typecheck
+pnpm lint
+pnpm format:check
+pnpm --filter web exec storybook build --quiet -o /tmp/storybook-static
+pnpm --filter web storybook         # http://localhost:6006
+```
+
+Playwright はシステムライブラリ無しで入る。WSL の Ubuntu では chromium がそのまま headless で動いた。
+動かない環境では `pnpm --filter web exec playwright install chromium --with-deps` を実行する。
+
+---
+
 ## 未実施
 
 この時点では入れていないもの。それぞれの段階で入れる。
@@ -226,4 +276,5 @@ HTML に本のタイトル、絞り込み欄、読了トグルのボタン、詳
 | | 入れる段階 |
 |---|---|
 | `/settings/*` `/stats/monthly` `/notes/recent` のエンドポイント | 段階 4 と 5 |
-| Storybook、Vitest | 最初の Presentational を作るとき |
+| `BookInfo` `BookNoteList` とその Skeleton、`BookFilterField` `BookRows`、両 Page の story | 段階 1 の残り。導入時は動作確認に必要な 3 つだけ書いた |
+| `toBookNote` のテスト | 同上 |

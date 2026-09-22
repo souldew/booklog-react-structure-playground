@@ -1,5 +1,5 @@
 // Book ドメインの model。型と、型を導く元になる値を置く (docs/directory-conventions.md「model と constants の線引き」)。
-// 生成された API 型 (snake_case、id は number) とは別物で、両者の変換は lib/ の mapper が持つ。
+// 生成された API 型 (snake_case、id は number) とは別物で、両者の変換は apis/mappers/ が持つ。
 // Presentational はこちらだけを知る。
 
 // 値の一覧も要る (絞り込みの選択肢など) ので、配列から型を導く。
