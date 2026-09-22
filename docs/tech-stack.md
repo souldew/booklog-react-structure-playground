@@ -136,7 +136,7 @@ Storybook と Vitest を採用する。[directory-conventions.md](directory-conv
 | 対象 | 動かす場所 | 書くもの |
 |---|---|---|
 | story | browser（Vitest の storybook project） | Presentational と Skeleton だけ。Container は書かない |
-| `*.test.ts` | node | `apis/mappers/` と `lib/` の純粋関数 |
+| `*.test.ts` | node（Vitest の unit project） | `apis/mappers/` と `lib/` の純粋関数。`apis/functions/` は `fetch` をスタブして通信の手前まで動かす (後述) |
 
 msw は入れない。story は Presentational で完結させ、通信をモックしない。
 Storybook は `web` にだけ置く。`api` は Vitest のみ。
@@ -174,3 +174,51 @@ suspend すると丸ごと捨てられて作り直されるので、内側で作
 
 本物の Container と Suspense を story に載せる `experimentalRSC` は使わない。Container の story を書かないという
 規則を崩す上に、名前どおり experimental であるため。
+
+### apis/functions のテストは fetch をスタブする
+
+`apis/functions/` の関数は「生成クライアントを呼ぶ → status で分岐 → mapper → 例外の翻訳 → 副作用」の配線で、
+確かめたいのは **web が境界に何を出し、何が返ったときにどう振る舞うか**。生成クライアントを `vi.mock` すると
+URL・メソッド・body が見えなくなるので、その手前の `fetch` を差し替え、生成クライアント → mutator → mapper を通しで動かす。
+
+| 決めたこと | 内容 |
+|---|---|
+| 差し替え方 | `shared/fixtures/stubFetch.ts`。`vi.stubGlobal("fetch", ...)` で global の `fetch` を置き換える。解除は unit project の `unstubGlobals: true` が毎テスト後に行う |
+| 応答の指定 | 配列で渡し、`fetch` が呼ばれた順に先頭から返す。URL やメソッドでは振り分けない。使い切ったら例外で止める |
+| 送った内容 | 戻り値の配列に、呼ばれた順のメソッド・パス・JSON の body が記録される。パスは base URL を除いた `pathname` |
+| 応答の body | 生成型 (`@/generated/model`) を付けて手で書く。テストは `apis/` の中にあるので生成型を import してよい |
+| `next/cache` | `revalidatePath` はリクエストの外で呼ぶと Next が例外を投げるので `vi.mock("next/cache")` する。`"use server"` は Vitest では文字列に過ぎない |
+
+順番でしか振り分けないのは、`functions/` が「1 エンドポイント 1 ファイル」で、1 関数の通信が必ず 1 回だから。
+複数のエンドポイントの合成は関数の中で `Promise.all` せず、Container 側で関数を並べて呼ぶ。
+Container はテストしないので、複数リクエストをスタブする場面が生まれない。
+
+#### 担保しているものと、していないもの
+
+| 担保している | 手段 |
+|---|---|
+| 送るメソッド・パス (パスパラメータの埋め込みを含む)・body の JSON 化 | スタブの記録 |
+| status の分岐。200 は mapper へ、404 の `ApiError` は `undefined`、それ以外はそのまま投げる | 応答の status |
+| 副作用。成功時だけ `revalidatePath`、失敗は throw せず `{ ok: false, message }` で返す | `vi.mock` した `revalidatePath` の呼び出し記録 |
+| mapper を含む配線が実行時に通ること | 戻り値の `id` と `status` を 1 つ見る |
+
+mapper の変換の正しさは `apis/mappers/` のテストの仕事で、関数のテストでは見ない。「mapper を呼んでいるか」も、
+生成型とドメイン型の `id` (`number` と `string`) や `status` (`on_hold` と `onHold`) が食い違っている限り tsc が保証するので、
+関数のテストの assert は配線が通る 1 本で足りる。
+
+| 担保していない | 埋めるなら |
+|---|---|
+| api がそのパスと body を受け付け、その形で返すこと。スタブは何でも受ける | `api` 側に `app.request()` のテストを置き、`openapi.yaml` を挟んで両側から閉じる |
+| `API_BASE_URL` の分岐。スタブはホストを見ない | 必要になったら `resolveBaseUrl` を切り出して単体で見る |
+| Container の `notFound()` や Server Action の受け渡し | 方針として書かない。ブラウザで確認する |
+
+#### msw を使わない理由
+
+一度 orval の `output.mock` で msw の handler を生成する形を試し、スタブに戻した。
+
+- 生成された handler は status が 200 に固定で、`override` は body しか差し替えられない。404 や 500 は素の `http.get(...)` を手で書くことになり、9 テスト中 4 つが手書きだった。正常系 5 つの 1 行ずつしか省けていない
+- 4 関数・9 テストの規模では、msw と `@faker-js/faker` の依存、生成物 6 ファイル、`setupServer` の起動と後始末が見合わない
+- 1 関数 1 通信の規則があるので、msw の強みであるパスでの振り分けを使う場面がない
+
+msw に移る条件は、`apis/hooks/` を単体テストすると決めたとき。TanStack Query は 1 テストで複数のパスに再取得を飛ばすので、
+順番のキューでは読めなくなる。その時点で hooks 用の jsdom project と合わせて入れる。hooks をテストしないと決めるなら、この先も要らない。

@@ -295,7 +295,7 @@ mapper は純粋関数だが `@/generated/model` を import するので、ド�
 
 | サブディレクトリ | 置くもの | 生成型 | 呼ぶ側 |
 |---|---|---|---|
-| `functions/` | 生成クライアントを呼び、mapper を通してドメイン型を返す async 関数。Server Action もここ。1 エンドポイント 1 ファイル | import する | Server Component の Container、`app/` の `loader` / `action` |
+| `functions/` | 生成クライアントを呼び、mapper を通してドメイン型を返す async 関数。Server Action もここ。1 エンドポイント 1 ファイルで、1 関数の通信は 1 回。複数のエンドポイントの合成は Container で行う | import する | Server Component の Container、`app/` の `loader` / `action` |
 | `hooks/` | 生成された TanStack Query の hook を包み、`select` などで mapper を通してドメイン型を返す hook | import する | ClientContainer |
 | `mappers/` | 生成型 ⇄ ドメイン型の純粋関数。副作用なし。テストは node で書く | 型だけ import する | `functions/` `hooks/` |
 
@@ -348,7 +348,7 @@ API レスポンスの型（生成型）と画面で使う型（ドメイン型�
 Container の story は書かず、msw も使わない。story は Presenter だけで完結させる。
 
 story とテストで使うデータは slice の `fixtures/` に置く (`features/book/fixtures/books.ts`)。
-story が import する道具も `fixtures/` に置く (`shared/fixtures/expectStable.ts`)。
+story やテストが import する道具も `fixtures/` に置く (`shared/fixtures/expectStable.ts` `shared/fixtures/stubFetch.ts`)。
 Storybook の仕組みそのもの (ツールバー、全 story に効く decorator とその部品) は `web/.storybook/` に置き、`src/` には入れない。
 
 `<tr>` や `<tbody>` を返すコンポーネントは、story の `decorators` で `Table` に包む。

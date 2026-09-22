@@ -253,7 +253,8 @@ pnpm dlx storybook@10.6.0 init --type nextjs --builder vite --features docs test
 | story (features) | `BookStatusBadge` |
 | story (book-list) | `BookRow` (更新失敗の play)、`BookRows`、`BookRowsSkeleton`、`BookFilterField` (入力の play)、`BookListPage` (絞り込みで行が減る play) |
 | story (book-detail) | `BookInfo` `BookInfoSkeleton` `BookNoteList` (空あり) `BookNoteListSkeleton` `BookDetailPage` (両方ロード中・書誌情報だけ・メモだけロード中・レイアウトシフトの検査) |
-| test | `apis/mappers/mapBookStatus` `apis/mappers/toBook` `apis/mappers/toBookNote` `lib/filterBooks` `shared/lib/formatDate` |
+| test (純粋関数) | `apis/mappers/mapBookStatus` `apis/mappers/toBook` `apis/mappers/toBookNote` `lib/filterBooks` `shared/lib/formatDate` |
+| test (apis/functions) | `fetchBook` (200 の mapping、404 → `undefined`、500 → `ApiError`)、`fetchBooks`、`fetchBookNotes` (パス、空配列、404)、`updateBookStatus` (body が `on_hold`、成功時の `revalidatePath`、失敗は値で返す)。`shared/fixtures/stubFetch.ts` で `fetch` を差し替える ([tech-stack.md §7](tech-stack.md)) |
 | Storybook の仕組み | `.storybook/slotDelay.tsx` (ツールバーの「スロットの遅延」、decorator、`Delayed`)、`shared/fixtures/expectStable.ts` (play でレイアウトシフトを検査する helper) |
 
 Page の story はスロットに取得後の Presentational や Skeleton を直接渡す。Container と Suspense は story では使わない。
@@ -274,11 +275,13 @@ Skeleton から中身への切り替わりは、Page の story の `parameters.s
 | Page ごとに遅延つきの story を render で手書きすると繰り返しが多い | 「スロット名 → Skeleton」の対応だけが Page 固有で、残りは定型。定型を `.storybook/` の decorator に寄せ、story は `parameters.slots` の 1 行にした |
 | Skeleton と中身を並べて比べる `WithSkeleton` story | 一度書いたが削除した。ツールバーの遅延で切り替わりが見えるようになり役目が無くなった上、別コンポーネントの Skeleton を story の中で描くのは「1 ディレクトリ = story 1 ファイル」の単位を跨ぐため |
 | story の実行中に Base UI が `nativeButton` の警告を出す | `Button` に `render={<Link />}` を渡している箇所。`<a>` を描くのに `nativeButton` が既定の true のまま。テストは落ちない。`nativeButton={false}` を付ければ消える。未対応 |
+| `apis/functions` のテストで msw を試して戻した | orval 8.36 の `output.mock` は `mock: { generators: [{ type: "msw" }, { type: "faker" }] }` の形 (`mock: { type: "msw" }` は TypeError)。生成された handler は 200 固定で 404 / 500 は手書きになり、省ける量が無かった。`msw/node` は Node 26 で `localStorage` の `ExperimentalWarning` も出す。依存・生成物・設定をすべて外し、`fetch` のスタブに戻した。理由と再検討の条件は [tech-stack.md §7](tech-stack.md) |
+| `pnpm remove` のあとも lockfile に msw が残る | peer として解決した snapshot が残るため。`git checkout -- pnpm-lock.yaml` で戻し、`pnpm install --frozen-lockfile` が通ることを確認した |
 
 ### 確認
 
 ```bash
-pnpm --filter web test              # unit と storybook の 2 project。16 files / 34 tests
+pnpm --filter web test              # unit と storybook の 2 project。20 files / 43 tests
 pnpm --filter web typecheck
 pnpm lint
 pnpm format:check
@@ -298,3 +301,4 @@ Playwright はシステムライブラリ無しで入る。WSL の Ubuntu では
 | | 入れる段階 |
 |---|---|
 | `/settings/*` `/stats/monthly` `/notes/recent` のエンドポイント | 段階 4 と 5 |
+| `api` の Vitest (`app.request()`、DB の分離、`API_DELAY=0`) | 未定。web 側のスタブは「web はこう送る」しか担保しないので、契約の反対側として要る |
