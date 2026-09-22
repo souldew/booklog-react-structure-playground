@@ -210,7 +210,7 @@ slice をディレクトリごと移しても、内側の相対パスは壊れ�
 | `model/` | 業務の知識。型、型を導く `as const`、zod スキーマ、業務ルールの値 | `model` |
 | `constants/` | 画面の都合の値のうち複数箇所で使うもの。ラベルの辞書、共有する文言。1 箇所ならベタ書き。業務の値は入れず `model` に置く | `ui` |
 | `lib/` | 純粋関数。生成型を知らないもの。生成型 ⇄ ドメイン型の変換は `apis/mappers/` | `lib` |
-| `fixtures/` | story やテストで使うデータ | — |
+| `fixtures/` | story やテストで使うデータと、story が import する道具 (`expectStable` など) | — |
 
 足りなければ、内容を表す名前のディレクトリを追加してよい (shared の `routes/` `config/` など)。
 
@@ -348,5 +348,12 @@ API レスポンスの型（生成型）と画面で使う型（ドメイン型�
 Container の story は書かず、msw も使わない。story は Presenter だけで完結させる。
 
 story とテストで使うデータは slice の `fixtures/` に置く (`features/book/fixtures/books.ts`)。
+story が import する道具も `fixtures/` に置く (`shared/fixtures/expectStable.ts`)。
+Storybook の仕組みそのもの (ツールバー、全 story に効く decorator とその部品) は `web/.storybook/` に置き、`src/` には入れない。
+
 `<tr>` や `<tbody>` を返すコンポーネントは、story の `decorators` で `Table` に包む。
 props で受け取る関数は `storybook/test` の `fn()` を渡し、実装は import しない。
+
+Page の story はスロットに取得後の Presentational や Skeleton を直接渡す。Container と Suspense は story では使わない。
+Skeleton からの切り替わりは `parameters.slots` にスロット名と Skeleton を宣言し、ツールバーの遅延で見る
+([tech-stack.md §7](tech-stack.md))。Skeleton と中身を並べて比べるだけの story は書かない。切り替わりで見えるため。

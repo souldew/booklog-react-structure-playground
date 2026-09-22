@@ -151,3 +151,26 @@ Storybook は `web` にだけ置く。`api` は Vitest のみ。
 | `@/` の解決 | `vitest.config.mts` の `resolve.alias` で `src/` に向ける。storybook project は framework が tsconfig の paths を読むが、unit project には効かないため |
 | story の実行 | `pnpm test` で unit と story を両方回す。ブラウザで見るときは `pnpm storybook` |
 | 差し替え | props で受け取る関数は `storybook/test` の `fn()` を渡す。戻り値の型が union のときは `fn(async (): Promise<ActionResult> => ...)` のように注釈する |
+| Page のスロット | 取得後の Presentational や Skeleton を直接渡す。Container と Suspense は story では使わない。`experimentalRSC` も使わない |
+| Skeleton からの切り替わり | ツールバーの「スロットの遅延」(なし / 800ms / 2s)。Page の story が `parameters.slots` に「スロット名 → Skeleton」を宣言すると、選んだ遅延の間だけ Skeleton を出してから中身に切り替わる。実装は `web/.storybook/slotDelay.tsx` |
+| レイアウトシフトの検査 | `shared/fixtures/expectStable.ts`。story に `globals: { slotDelay: 800 }` を付け、play で「下にある要素の上端が切り替わりの前後で動かない」ことを検査する |
+
+### Skeleton からの切り替わりを story で見る
+
+Skeleton と中身を別々の静止画として持つだけでは、切り替わりの瞬間 (レイアウトシフト) が見えない。
+そこで `.storybook/slotDelay.tsx` に decorator を置き、`parameters.slots` を持つ story のスロットを
+「指定ミリ秒の間 fallback を出し、その後 children に切り替える」部品 (`Delayed`) で包む。
+
+```tsx
+// Page の story 側はこれだけ
+parameters: { slots: { rows: <BookRowsSkeleton /> } },
+```
+
+`Delayed` は内側で Suspense と `use()` を使う。Promise は Suspense 境界の外で持つ。境界の内側は初回に
+suspend すると丸ごと捨てられて作り直されるので、内側で作ると毎回新しい Promise になって解決しない。
+
+`Delayed` は decorator だけが使うので `.storybook/` に閉じ、`src/` には置かない。story が import する道具
+(`expectStable`) は `shared/fixtures/` に置く。
+
+本物の Container と Suspense を story に載せる `experimentalRSC` は使わない。Container の story を書かないという
+規則を崩す上に、名前どおり experimental であるため。

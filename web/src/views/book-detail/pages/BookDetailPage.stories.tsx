@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { within } from "storybook/test";
 
 import { BOOK_NOTE_FIXTURES } from "@/features/book-note/fixtures/bookNotes";
 import { BOOK_FIXTURES } from "@/features/book/fixtures/books";
+import { expectStable } from "@/shared/fixtures/expectStable";
 
 import { BookInfo } from "../components/BookInfo/BookInfo";
 import { BookInfoSkeleton } from "../components/BookInfoSkeleton/BookInfoSkeleton";
@@ -10,12 +12,16 @@ import { BookNoteListSkeleton } from "../components/BookNoteListSkeleton/BookNot
 import { BookDetailPage } from "./BookDetailPage";
 
 // スロットには取得後の Presentational や Skeleton を直接渡す。Container と Suspense は story では使わない。
+// Skeleton から中身への切り替わりは、parameters.slots とツールバーの「スロットの遅延」で見る (.storybook/preview.tsx)。
 const meta = {
   component: BookDetailPage,
   args: {
     bookId: BOOK_FIXTURES.reading.id,
     info: <BookInfo book={BOOK_FIXTURES.reading} />,
     notes: <BookNoteList notes={BOOK_NOTE_FIXTURES} />,
+  },
+  parameters: {
+    slots: { info: <BookInfoSkeleton />, notes: <BookNoteListSkeleton /> },
   },
 } satisfies Meta<typeof BookDetailPage>;
 
@@ -44,5 +50,16 @@ export const InfoLoading: Story = {
 export const NotesLoading: Story = {
   args: {
     notes: <BookNoteListSkeleton />,
+  },
+};
+
+// 書誌情報の Skeleton と中身の高さが揃っていて、下にある「メモ」の見出しが動かないことを検査する。
+export const NoLayoutShift: Story = {
+  globals: { slotDelay: 800 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expectStable(canvas.getByRole("heading", { name: "メモ" }), () =>
+      canvas.getByText(BOOK_FIXTURES.reading.title),
+    );
   },
 };

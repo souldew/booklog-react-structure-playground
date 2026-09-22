@@ -240,7 +240,7 @@ pnpm dlx storybook@10.6.0 init --type nextjs --builder vite --features docs test
 | `vitest` `vite` `playwright` `@vitest/browser-playwright` が `latest` | 版を固定。特に vitest は 5 系が入るが `@storybook/addon-vitest` の peer が `^3 || ^4` なので 4 系に落とした |
 | `vitest.config.ts` | `.mts` に改名。`package.json` が `"type": "module"` ではないため、`.ts` だと Vite が CJS 扱いで警告を出す |
 | `.storybook/main.ts` の `stories` | `../src/**/*.stories.tsx` だけにした。mdx は書かない |
-| `.storybook/preview.tsx` | `src/app/globals.css` を import して Tailwind と shadcn のテーマを当てる |
+| `.storybook/preview.tsx` | `src/app/globals.css` を import して Tailwind と shadcn のテーマを当てる。ツールバーの「スロットの遅延」と decorator を `.storybook/slotDelay.tsx` から登録する |
 | `vitest.config.mts` | `unit` project (node、`src/**/*.test.ts`) を追加し、`resolve.alias` で `@/` を `src/` に向けた |
 | `package.json` | `test` (`vitest run`) と `test:watch` を追加。ルートにも `test` (`pnpm -r test`) を追加 |
 | `.gitignore` | `storybook-static/` と `*storybook.log` を追加 |
@@ -252,23 +252,33 @@ pnpm dlx storybook@10.6.0 init --type nextjs --builder vite --features docs test
 | fixtures | `features/book/fixtures/books.ts` (状態ごとに 1 冊)、`features/book-note/fixtures/bookNotes.ts` (改行入りを 1 件含む) |
 | story (features) | `BookStatusBadge` |
 | story (book-list) | `BookRow` (更新失敗の play)、`BookRows`、`BookRowsSkeleton`、`BookFilterField` (入力の play)、`BookListPage` (絞り込みで行が減る play) |
-| story (book-detail) | `BookInfo` `BookInfoSkeleton` `BookNoteList` (空あり) `BookNoteListSkeleton` `BookDetailPage` (両方ロード中・書誌情報だけ・メモだけロード中) |
+| story (book-detail) | `BookInfo` `BookInfoSkeleton` `BookNoteList` (空あり) `BookNoteListSkeleton` `BookDetailPage` (両方ロード中・書誌情報だけ・メモだけロード中・レイアウトシフトの検査) |
 | test | `apis/mappers/mapBookStatus` `apis/mappers/toBook` `apis/mappers/toBookNote` `lib/filterBooks` `shared/lib/formatDate` |
+| Storybook の仕組み | `.storybook/slotDelay.tsx` (ツールバーの「スロットの遅延」、decorator、`Delayed`)、`shared/fixtures/expectStable.ts` (play でレイアウトシフトを検査する helper) |
 
 Page の story はスロットに取得後の Presentational や Skeleton を直接渡す。Container と Suspense は story では使わない。
 Provider を読む部品 (`BookFilterField` `BookRows` と両者を含む `BookListPage`) は decorator で `BookFilterProvider` に包む。
 `BookListPage` の play で、入力欄と行が同じ Provider を読んで絞り込みが効くことを確かめている。
+
+Skeleton から中身への切り替わりは、Page の story の `parameters.slots` にスロット名と Skeleton を宣言し、
+ツールバーの遅延で見る ([tech-stack.md §7](tech-stack.md))。`BookDetailPage` の `NoLayoutShift` は
+`globals: { slotDelay: 800 }` で遅延を固定し、「メモ」の見出しが書誌情報の解決前後で動かないことを play で検査する。
 
 ### 気づいた点
 
 | 現象 | 対処・理由 |
 |---|---|
 | story を増やした初回の実行で `Failed to fetch dynamically imported module` が出て 5 件落ちる。2 回目は通る | Vite が `@base-ui/react/input` と `lucide-react` をテスト中に最適化して再読み込みしたため。storybook project の `optimizeDeps.include` に UI 部品が使う外部依存を列挙して、最初から最適化させる |
+| 遅延させるスロットが永遠に解決しない | 最初は story 側に Suspense を書き、その内側の部品で Promise を作っていた。Suspense 境界の内側は初回に suspend すると丸ごと捨てられて作り直されるので、Promise が毎回新しくなる。Suspense を `Delayed` の中に入れ、Promise を境界の外で持つようにした |
+| `NoLayoutShift` が「248 が 244 になる」と落ちた | `BookInfoSkeleton` が本物より 4px 低かった。行が `h-4` で `gap-y-3`、本物は text-sm の 20px 行で `gap-y-2`。Skeleton を `h-5` と `gap-y-2` に揃え、Badge の行は丸角にした。`BookNoteListSkeleton` も同じ計算で 1 件 4px 低く、メタ行 `h-4`・本文 `h-5`・`space-y-1` に直した。検査が実際にずれを見つけた例 |
+| Page ごとに遅延つきの story を render で手書きすると繰り返しが多い | 「スロット名 → Skeleton」の対応だけが Page 固有で、残りは定型。定型を `.storybook/` の decorator に寄せ、story は `parameters.slots` の 1 行にした |
+| Skeleton と中身を並べて比べる `WithSkeleton` story | 一度書いたが削除した。ツールバーの遅延で切り替わりが見えるようになり役目が無くなった上、別コンポーネントの Skeleton を story の中で描くのは「1 ディレクトリ = story 1 ファイル」の単位を跨ぐため |
+| story の実行中に Base UI が `nativeButton` の警告を出す | `Button` に `render={<Link />}` を渡している箇所。`<a>` を描くのに `nativeButton` が既定の true のまま。テストは落ちない。`nativeButton={false}` を付ければ消える。未対応 |
 
 ### 確認
 
 ```bash
-pnpm --filter web test              # unit と storybook の 2 project。7 files / 15 tests
+pnpm --filter web test              # unit と storybook の 2 project。16 files / 34 tests
 pnpm --filter web typecheck
 pnpm lint
 pnpm format:check

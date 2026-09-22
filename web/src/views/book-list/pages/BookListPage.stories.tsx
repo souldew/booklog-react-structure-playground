@@ -10,6 +10,7 @@ import { BookRowsSkeleton } from "../components/BookRowsSkeleton/BookRowsSkeleto
 import { BookListPage } from "./BookListPage";
 
 // スロットには取得後の Presentational や Skeleton を直接渡す。Container と Suspense は story では使わない。
+// Skeleton から行への切り替わりは、parameters.slots とツールバーの「スロットの遅延」で見る (.storybook/preview.tsx)。
 // 絞り込み欄と行が同じ Provider を読むので、入力に応じて行が絞られる姿がここで見える。
 const meta = {
   component: BookListPage,
@@ -20,6 +21,9 @@ const meta = {
         onChangeStatus={fn(async (): Promise<ActionResult> => ({ ok: true }))}
       />
     ),
+  },
+  parameters: {
+    slots: { rows: <BookRowsSkeleton /> },
   },
   decorators: [
     (Story) => (
