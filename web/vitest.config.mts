@@ -22,6 +22,9 @@ export default defineConfig({
           name: "unit",
           environment: "node",
           include: ["src/**/*.test.ts"],
+          // apis/functions のテストは fetch を vi.stubGlobal で差し替える (shared/fixtures/stubFetch.ts)。
+          // テストごとに元へ戻す
+          unstubGlobals: true,
         },
       },
       {
