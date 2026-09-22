@@ -202,10 +202,10 @@ slice をディレクトリごと移しても、内側の相対パスは壊れ�
 | カテゴリ | 置くもの | FSD の segment |
 |---|---|---|
 | `apis/` | API 境界。`functions/` `hooks/` `mappers/` の 3 つに分ける (後述)。`@/generated` を import してよい唯一のカテゴリ | `api` |
-| `components/` | コンポーネント | `ui` |
+| `components/` | コンポーネント。1 ディレクトリ = story 1 ファイル。story の無い部品は付属品として親のディレクトリに置く (後述) | `ui` |
 | `layouts/` | 骨格。`children` を受け取る | `ui` |
 | `pages/` | 画面の骨格と組み立て | `ui` |
-| `hooks/` | フック。通信しないもの。生成 hook を包むものは `apis/hooks/` | `model` |
+| `hooks/` | 2 つ以上のコンポーネントが使うフック。1 つしか使わないものはそのコンポーネントの付属品。生成 hook を包むものは `apis/hooks/` | `model` |
 | `providers/` | Context の Provider と、それを読むフック | `model` |
 | `model/` | 業務の知識。型、型を導く `as const`、zod スキーマ、業務ルールの値 | `model` |
 | `constants/` | 画面の都合の値のうち複数箇所で使うもの。ラベルの辞書、共有する文言。1 箇所ならベタ書き。業務の値は入れず `model` に置く | `ui` |
@@ -225,13 +225,17 @@ slice をディレクトリごと移しても、内側の相対パスは壊れ�
 
 ### コンポーネント 1 つの内部
 
-1 ディレクトリ = 1 コンポーネント。役割で分けるときのファイル名は次の表に揃える。
+1 ディレクトリ = 1 コンポーネント = story 1 ファイル。**ディレクトリと story は双方向に対応する。**
+story を書きたい単位がコンポーネントであり、`components/` 直下のディレクトリには必ず story がある。
+story の無い Presentational はコンポーネントではなく、後述の「付属品」として親のディレクトリに置く。
+
+役割で分けるときのファイル名は次の表に揃える。
 ただし 4 種類をすべて作ることは求めない。1 ファイルが長くなり過ぎたときに、この名前で分ける。
 
 | 種別 | ファイル名 | 役割 | story |
 |---|---|---|---|
 | Presentational | `Xxx.tsx` | 描画する。通信しない (context は読んでよい) | 書く |
-| Skeleton | `XxxSkeleton.tsx` | ローディング中の見た目。独立したコンポーネントとして扱う | 書く |
+| Skeleton | `XxxSkeleton.tsx` | ローディング中の見た目 | 要件次第。単体で見たいなら書く |
 | Container | `XxxContainer.tsx` | サーバーでデータを取得する、またはスロットへ注入する | 書かない |
 | Client Container | `XxxClientContainer.tsx` | クライアントで通信する (`useQuery` / `useMutation`) | 書かない |
 
@@ -239,11 +243,44 @@ Presentational と Container の境界は「通信するか」で引く。contex
 `useMutation` はレンダーだけなら通信しないが、内包すると story から差し替えられないので Presentational には置かず、
 実行のきっかけは props で受け取る。
 
-Skeleton は基本、別のディレクトリにする。
+Skeleton の置き場は要件で決める。単体で story を見たいなら独立したコンポーネントとして別のディレクトリにし、
+そうでなければ Presentational の付属品として同じディレクトリに `XxxSkeleton.tsx` で置く。
+判断の基準は次の「付属品」と同じ。
 
-コンポーネントの下に `components/` や `hooks/` を再帰的に切らない。
-内側でだけ使う hook も slice の `hooks/` に置き、`components/` から import する。
-再帰を許すのは `shared` だけ (前述)。
+#### 付属品
+
+そのコンポーネントしか使わないものは、そのディレクトリの中にある。これを付属品と呼ぶ。
+Container もこの見方では Presentational の付属品で、story を書かないのはそのため。
+
+次の 3 つを**すべて**満たすものだけを付属品にする。1 つでも外れたら独立したコンポーネントであり、
+ディレクトリと story を作る。
+
+| 条件 | 外れる例 |
+|---|---|
+| 使う親が 1 つしかない | 一覧と詳細の両方で使う `BookStatusBadge` |
+| 自分の状態を持たない。pending、error、空、variant のような「story で見せたい姿」が無い | 行単位の pending / error を持つ `BookRow` |
+| 親の props をそのまま受け取るか、親が持つ値を分けて描くだけ | — |
+
+| 付属品の種類 | 置き方 | 例 |
+|---|---|---|
+| 描画の切り出し | 親のディレクトリに置き、ファイル名は親名を頭に付ける | `BookRow/BookRowStatusCell.tsx` |
+| hook | 親のディレクトリに置く。slice の `hooks/` には置かない | `BookRow/useBookRowToggle.ts` |
+
+付属品はディレクトリの外から import しない。外から import された時点で付属品ではなくコンポーネント
+(hook なら slice の `hooks/`) なので、昇格させる。`constants` の「1 箇所ならベタ書き、2 箇所で使ったら昇格」と同じ形。
+slice の `hooks/` に置くのは、2 つ以上のコンポーネントが使う hook だけ。
+
+付属品はディレクトリ直下にフラットに置き、**コンポーネントの下に `components/` や `hooks/` を再帰的に切らないことを推奨する。**
+1 ディレクトリに付属品が 4、5 個並ぶなら、状態を持つものが隠れている可能性が高いので、
+まず付属品の条件に照らして昇格させるものがないか見直す。ディレクトリを切るのは、それでも多いときの最後の手段。
+
+やむを得ず切る場合の縛りは次のとおり。
+
+- 入れ子は 1 段まで。付属品の付属品でさらに切らない
+- 内側の `components/` は付属品の置き場なので story は書かない。「ディレクトリ ⇔ story」の規則は slice 直下の `components/` にだけ適用する
+- 外から import しないという付属品の条件はそのまま効く。内側のディレクトリを外から参照した時点で slice の `components/` へ昇格させる
+
+`shared` の部品は例外で、内側に再帰的に置いてよい (前述)。
 
 ### 状態と通信
 
