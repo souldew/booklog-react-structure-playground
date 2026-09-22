@@ -1,0 +1,17 @@
+{
+  "name": "booklog-react-structure-playground",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "db:reset": "pnpm --filter api db:reset",
+    "openapi": "pnpm --filter api openapi && pnpm --filter web codegen",
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.70.0",
+    "oxlint": "^1.85.0"
+  },
+  "packageManager": "pnpm@10.26.0"
+}

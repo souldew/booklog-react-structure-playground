@@ -39,7 +39,7 @@ React アプリの **URL 設計と画面の分け方**を、動くアプリで�
 
 画面の一覧と、それぞれの view への写像は [screens.md](screens.md) にある。
 API と DB の構成は [backend.md](backend.md) にある。
-使う技術の一覧は [tech-stack.md](tech-stack.md) にある。
+使う技術の一覧は [tech-stack.md](tech-stack.md) に、初期化の手順は [setup.md](setup.md) にある。
 
 ---
 
