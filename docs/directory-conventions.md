@@ -102,6 +102,31 @@ Container を分け、`pages/` にフラットに並べる。
 
 層の名前を `pages/` にしないのは、Next.js が `src/pages/` を Pages Router として拾うため。
 
+### view は複数のドメインを知ってよい
+
+**画面はドメインが出会う場所で、view はその合成の最上位。** `views/book-detail` が `features/book` (書誌情報) と
+`features/book-note` (メモ一覧) の両方を import するのは設計どおりで、「両方が要るものは、両方を import できる
+上の層に置く」という §1 の規則の、上の層が view にあたる。
+
+| 事実 | 意味 |
+|---|---|
+| view 名の `{domain}` は画面の主題 | `book-detail` の `book` は「主役は本」という意味で、知ってよいドメインを縛るものではない。主役以外のドメインを並べるのは普通で、`dashboard` は本・メモ・統計を横断する |
+| features 同士は import しない | `features/book` は `features/book-note` を知らず、逆も知らない。合成は view でだけ起きる |
+| 業務上の入れ子はコードでは兄弟 | Book と BookNote は 1:N だが、`features/book/book-note/` とは切らず `features/book-note/` として横に並べる。親子関係は `bookId: string` と URL (`/books/[bookId]/notes`) で表し、Book の型は `notes` を持たない |
+| features の `{domain}` と view の `{domain}` の対応 | 命名の指針であって import の条件ではない。view はどの features でも import できる |
+
+詳細画面に書誌情報とメモ一覧が並ぶのは、Book がメモを持っているからではなく、`book-detail` という画面が
+両方を置くと決めたから ([screens.md §5](screens.md))。その決定を持つのが view の Container で、
+`BookInfoContainer` と `BookNoteListContainer` を並べているのは `views/book-detail` だけ。
+
+**view の外に出す境目**は、合成が view の外でも要るようになったとき。
+
+- 「本とそのメモを並べたパネル」を詳細とダッシュボードの両方で使う
+- 合成に業務ルールが混ざる。「読了した本のメモだけを出す」のような判断が Container に増えていく
+
+こうなったら、その合成を view から切り出して widgets に置く。1 画面でしか使わず、Container が 2 つの取得を
+並べているだけなら、切り出す理由は無い。
+
 ### widgets
 
 基本的には使わない層で、使わずに済むようにする。
@@ -113,6 +138,7 @@ Header に entities の user 情報を載せるなど、複数のドメインを
 業務ドメイン単位で区切り、`features/{domain}` にまとめる。
 views の list と detail で同じものを使う、といった場合に置く。
 `{domain}` は views のフォルダ名の `{domain}` と対応させるのが原則。
+これは命名の指針で、import の条件ではない。view はどの features でも import できる (views の節を参照)。
 
 `features/{domain}` の下に `{sub}` は切らない。本当に大きくなったら考えるが、原則は無いはず。
 

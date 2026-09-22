@@ -353,31 +353,4 @@ api に `status: reading` で保存される。`/books/7/edit` では状態の s
 | `/settings/*` `/stats/monthly` `/notes/recent` のエンドポイント | 段階 4 と 5 |
 | `api` の Vitest (`app.request()`、DB の分離、`API_DELAY=0`) | 未定。web 側のスタブは「web はこう送る」しか担保しないので、契約の反対側として要る |
 | フォームライブラリ Conform (`@conform-to/react` + `@conform-to/zod`) | 段階 3 でフォームが 3 つになったら検討。理由と入れ時は [tech-stack.md §5](tech-stack.md) |
-| Server Action を `apis/functions/` から `actions/` に分ける | 段階 3 で Server Action が 5、6 本になったら検討。理由と分け方は下の「検討中」 |
-
-### 検討中: Server Action を `actions/` に分ける
-
-[directory-conventions.md](directory-conventions.md) は確定した規則だけを書くので、判断待ちの案はここに置く。
-
-いまの `apis/functions/` には性質の違う 2 種類が同居している。
-
-| 種類 | 例 | 性質 |
-|---|---|---|
-| API の薄いラッパー | `fetchBook` `fetchBooks` | 通信して値を返す。画面のことは知らない |
-| Server Action | `createBook` `updateBook` `updateBookStatus` | 通信のほかに、検証・`revalidatePath`・`redirect` という**画面の都合**を持つ。値を返さず redirect で終わることもある |
-
-`revalidatePath("/books")` は「一覧が `/books` にある」という画面の知識で、API の関心ではない。
-分けるなら、Next の慣習どおり Server Action を slice の `actions/` に置き、`apis/functions/` は API のラッパーだけにする。
-
-```
-features/book/apis/functions/updateBook.ts   PATCH /books/:id を叩いて Book を返すだけ
-views/book-form/actions/updateBook.ts        検証 → features の updateBook → revalidatePath → redirect
-views/book-list/actions/updateBookStatus.ts  features の updateBook → revalidatePath
-```
-
-| | 内容 |
-|---|---|
-| 得るもの | `PATCH /books/:id` のラッパーが 1 つになり、`updateBookStatus` と `updateBook` が別々に生成クライアントを呼ぶ重複が消える。`apis/` が「通信して値を返す」だけの層になり、`actions/` が「画面の都合」を持つ層になる |
-| 規則との整合 | `actions/` は生成型に触らない (ラッパーがドメイン型で返す) ので、「`@/generated` は `apis/` の中だけ」はそのまま保てる |
-| コスト | カテゴリが 1 つ増える。directory-conventions の `apis/functions/` の「Server Action もここ」を書き換え、既存 3 本を移す |
-| 判断の時期 | 段階 3 (`book-note-form` `book-progress-form`) で Server Action が 5、6 本になったとき。いまの 3 本ではどちらでも破綻しない |
+| Server Action を `apis/functions/` から `actions/` に分ける | 段階 3 で Server Action が 5、6 本になったら検討。理由と分け方は [structure-notes.md §5](structure-notes.md) |
