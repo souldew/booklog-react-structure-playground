@@ -174,6 +174,48 @@ API_DELAY=0 pnpm --filter api dev   # curl で全エンドポイントを叩い�
 
 ---
 
+## 8. 段階 1: `/books` と `/books/[bookId]`
+
+```bash
+cd web
+pnpm dlx shadcn@latest add input table badge skeleton native-select -y
+```
+
+状態の絞り込みはネイティブの `<select>` を包んだ `native-select` にした。
+Base UI の `Select` はクライアントの状態を持つので、まず素の select で足りるかを見る。
+
+コードは手で書いた。層ごとの置き場は次のとおり。
+
+| 層 | 置いたもの |
+|---|---|
+| `app/` | `/` → `/books` のリダイレクト、`books/layout.tsx` の Provider マウント、`page.tsx` の結線、`error.tsx` |
+| `views/book-list/` | Page、Container、絞り込み欄、行、Skeleton、`apis/updateBookStatus.ts` の Server Action。文言は 1 箇所ずつなのでベタ書き |
+| `views/book-detail/` | Page、Container、書誌情報とメモ一覧の Presentational / Container / Skeleton |
+| `features/book/` | `model.ts` に絞り込み条件の型、`constants.ts` にラベル辞書、`providers/` `apis/` `lib/filterBooks.ts` `components/BookStatusBadge/` |
+| `features/book-note/` | `model.ts` `lib/toBookNote.ts` `apis/fetchBookNotes.ts` |
+| `shared/` | `apis/actionResult.ts` `lib/formatDate.ts` |
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| 生成型のレスポンスが `200 \| 404` の union で `data` に `ErrorResponse` が混ざる | `response.status === 200` で絞ってから mapper に渡す。mutator が 4xx を throw するので実行時には 404 側に入らない |
+| 存在しない本の URL が HTTP 200 を返す | `notFound()` を Suspense 境界の中で呼んでいるため。ストリーミングが始まった後なのでステータスは変えられず、境界の中に not-found の UI が出る。見出しを先に出す設計とセットの挙動 |
+| `/` の飛び先 | `/dashboard` ができるまで `/books` にしてある。段階 4 で戻す |
+
+### 確認
+
+```bash
+pnpm dev
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/books      # 200
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/books/1    # 200
+```
+
+HTML に本のタイトル、絞り込み欄、読了トグルのボタン、詳細の書誌情報とメモが含まれることを curl で確認した。
+読了トグルの Server Action と、一覧 → 詳細 → 一覧 での絞り込み条件の保持は、ブラウザで確認する。
+
+---
+
 ## 未実施
 
 この時点では入れていないもの。それぞれの段階で入れる。
