@@ -294,6 +294,56 @@ Playwright はシステムライブラリ無しで入る。WSL の Ubuntu では
 
 ---
 
+## 10. 段階 2: `/books/new` と `/books/[bookId]/edit`
+
+コードは手で書いた。`views/book-form/` を 1 つ切り、作成と編集の 2 画面を受け持つ。
+
+| 置き場 | 置いたもの |
+|---|---|
+| `model.ts` | `BookFormValues` (入力欄の値。文字列のまま)、`BookFormSchema` (zod。status は disabled で送られないので optional)、`BookFormState`、`BookFormAction`、`EMPTY_BOOK_FORM_VALUES` |
+| `lib/` | `parseBookForm` (FormData → スキーマで検証 → 値と項目ごとのエラー)、`toBookFormValues` (ドメイン型 → 初期値) |
+| `apis/mappers/` | `toBookCreate` `toBookUpdate` (フォームの値 → 生成型)。`toBookUpdate` は status が送信されたときだけ含める |
+| `apis/functions/` | `createBook` `updateBook` の Server Action。検証 → 通信 → `revalidatePath` → `redirect` |
+| `components/BookForm/` | Presentational。`useActionState` を持ち、action は props で受ける。`BookFormField.tsx` はラベルとエラーの枠で、付属品の最初の実例 |
+| `components/BookForm/BookFormContainer.tsx` | 編集だけが使う。取得して `notFound()`、初期値と `bind` した action を渡す |
+| `components/BookFormSkeleton/` | 編集でフィールドが届くまでの見た目 |
+| `pages/` | `BookFormPage` (骨格)、`BookNewFormPageContainer` (Suspense も Container も無い)、`BookEditFormPageContainer` (フィールドだけ境界の内) |
+| `app/` | `books/new/page.tsx` `books/[bookId]/edit/page.tsx` |
+
+作成と編集の差は、`pages/` の 2 つの Container と、`BookForm` に渡す props (`defaultValues` `statusLocked` `submitLabel` `action`) にだけ出る。
+`BookForm` と `BookFormPage` はどちらの画面かを知らない。決めごとは [tech-stack.md §5](tech-stack.md) にある。
+
+### 書いたもの
+
+| 種別 | ファイル |
+|---|---|
+| story | `BookForm` (作成・編集・検証エラー・API 失敗。編集の play で disabled の select が FormData に無いことを確かめる)、`BookFormSkeleton`、`BookFormPage` (作成・編集・編集のロード中) |
+| test | `parseBookForm` (空白の除去、必須、ページ数、status が無いときの引き継ぎ)、`toBookFormValues`、`toBookCreate`、`toBookUpdate` (status を外す)、`createBook` `updateBook` (検証で止まる、送る body、`revalidatePath` と `redirect`、404 と 500) |
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| 検証エラーの story で送信してもメッセージが出ない | `<input type="number" min={1}>` に `0` を入れるとブラウザの制約検証が送信を止める。`<form noValidate>` にして検証を Server Action に寄せた |
+| 編集画面で status の select を `disabled` にすると FormData に `status` が無い | 論点そのもの (docs/backend.md §1)。`parseBookForm` は `submittedStatus: undefined` として返し、`toBookUpdate` は body に含めない。ブラウザで保存して api の `status` が変わらないことを確認した |
+| `Button` に `render={<Link />}` を渡すと Base UI が `nativeButton` の警告を出す | `<a>` を描くので `nativeButton={false}` を付けた。段階 1 の 3 箇所 |
+
+### 確認
+
+```bash
+pnpm --filter web test              # 29 files / 69 tests
+pnpm --filter web typecheck
+pnpm lint
+pnpm format:check
+API_DELAY=0 pnpm dev
+```
+
+ヘッドレスブラウザで次を確かめた。`/books/new` を空のまま送ると 3 項目のエラーが出る。値を入れて送ると `/books/7` へ redirect し、
+api に `status: reading` で保存される。`/books/7/edit` では状態の select が `disabled` で、タイトルとページ数を変えて保存すると
+`/books/7` に戻り、api の `status` は `reading` のまま変わらない。確認後は `pnpm db:reset` でシードに戻した。
+
+---
+
 ## 未実施
 
 この時点では入れていないもの。それぞれの段階で入れる。
@@ -302,3 +352,4 @@ Playwright はシステムライブラリ無しで入る。WSL の Ubuntu では
 |---|---|
 | `/settings/*` `/stats/monthly` `/notes/recent` のエンドポイント | 段階 4 と 5 |
 | `api` の Vitest (`app.request()`、DB の分離、`API_DELAY=0`) | 未定。web 側のスタブは「web はこう送る」しか担保しないので、契約の反対側として要る |
+| フォームライブラリ Conform (`@conform-to/react` + `@conform-to/zod`) | 段階 3 でフォームが 3 つになったら検討。理由と入れ時は [tech-stack.md §5](tech-stack.md) |

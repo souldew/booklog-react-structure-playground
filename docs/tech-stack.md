@@ -22,7 +22,7 @@
 |---|---|---|
 | フレームワーク | Next.js (App Router) | Hono (Node) |
 | 言語 | TypeScript | TypeScript |
-| スキーマ | — | zod + `@hono/zod-openapi` |
+| スキーマ | zod (フォームの検証) | zod + `@hono/zod-openapi` |
 | DB | — | SQLite (`node:sqlite`)。ORM なし |
 | UI | shadcn/ui + Tailwind CSS | — |
 | 状態 | React Context | — |
@@ -115,6 +115,33 @@ Server Action なので、**QueryClientProvider は必要になった画面の�
 このデモでフォームが担う論点は
 「作成と編集で Presentational を共有する」「`disabled` な input は送信されない」の 2 つで、
 どちらもライブラリ無しのほうがそのまま見える。
+
+| 決めたこと | 内容 |
+|---|---|
+| フォームの値の型 | view の `model.ts` に置く (`BookFormValues`)。入力欄の値は文字列のまま持ち、検証に落ちても入力したままの文字を再表示する。API の型 (`BookCreate` `BookUpdate`) は `apis/mappers/` で作る |
+| Server Action の形 | `(state, formData) => Promise<state>`。`useActionState` がそのまま受ける。編集は `updateBook.bind(null, bookId)` で id を先に渡す |
+| 状態 (`BookFormState`) | `values` `fieldErrors` `message`。成功時は `redirect` で抜けるので、この型が返るのは検証か通信に失敗したときだけ |
+| 検証 | zod のスキーマ (`model.ts` の `BookFormSchema`) を Server Action の中の純粋関数 (`lib/parseBookForm.ts`) から使う。項目ごとのメッセージは `z.flattenError` で取り、最初の 1 つだけ出す。`<form noValidate>` でブラウザの制約検証は切る。切らないと `min` などで送信前に止まり、こちらのメッセージが出ない |
+| 送信後の再表示 | React は action の後に form をリセットするので、入力欄の `defaultValue` は action が返した `values` から取り直す |
+| `disabled` の扱い | 編集画面の状態 (`status`) は一覧のトグルで変えるので select を `disabled` にする。`disabled` な input は FormData に含まれないため、`parseBookForm` は無いことをエラーにせず「送られなかった」として返し、`toBookUpdate` は body から外す。API の PATCH は部分更新なので既存の値が保たれる |
+| 成功後 | `revalidatePath` で一覧 (編集は詳細も) を再検証し、詳細へ `redirect` する。`redirect` は throw で抜けるので `try` の外に置く |
+
+### ライブラリを入れるなら Conform
+
+手書きで残っている定型は、`formData.get()` を集めて文字列に整える部分、zod のエラーを 1 項目 1 メッセージに潰す部分、
+入力欄ごとの `defaultValue` `aria-invalid` `aria-describedby` の付け直し、`BookFormState` の自作の 4 つ。
+フォームが増えてこれらが目立ってきたら、**Conform** (`@conform-to/react` + `@conform-to/zod`) を入れる。
+
+| | 内容 |
+|---|---|
+| 選ぶ理由 | `useActionState` と Server Action を前提に作られている。`parseWithZod(formData, { schema })` で検証し、`submission.reply()` が `useActionState` に返す状態になる。`useForm` が項目ごとの `defaultValue` `errors` `aria` 属性をまとめて返す。同じスキーマでクライアント側の即時検証もできる |
+| zod との関係 | Conform 自身は検証をしない。zod は残し、`@conform-to/zod/v4` のアダプタを挟む (1.21 の peer は `zod ^3.21 || ^4`)。増えるのは 2 パッケージ |
+| 変わらないもの | `BookFormSchema`、`apis/mappers/`、Server Action の `revalidatePath` → `redirect` の流れ |
+| 消えるもの | `lib/parseBookForm.ts` の大半、`BookForm` の項目ごとの属性の手書き、`BookFormState` (Conform の `SubmissionResult` に置き換わる) |
+| 入れない理由 (いま) | 段階 2 の論点「`disabled` な input は送信されない」が `parseWithZod` の内側に隠れる。論点を手書きのコードで見せてから入れる |
+| 入れ時 | 段階 3 (`book-note-form` `book-progress-form`) でフォームが 3 つになり、定型が 3 回並んだとき |
+
+`zod-form-data` は FormData を文字列に整える部分だけを担う小さな代替だが、消える行数が少ないので Conform に行くか手書きのままかの二択にする。
 
 ---
 

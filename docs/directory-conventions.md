@@ -263,7 +263,7 @@ Container もこの見方では Presentational の付属品で、story を書か
 
 | 付属品の種類 | 置き方 | 例 |
 |---|---|---|
-| 描画の切り出し | 親のディレクトリに置き、ファイル名は親名を頭に付ける | `BookRow/BookRowStatusCell.tsx` |
+| 描画の切り出し | 親のディレクトリに置き、ファイル名は親名を頭に付ける | `BookForm/BookFormField.tsx` (ラベルとエラーの枠) |
 | hook | 親のディレクトリに置く。slice の `hooks/` には置かない | `BookRow/useBookRowToggle.ts` |
 
 付属品はディレクトリの外から import しない。外から import された時点で付属品ではなくコンポーネント
