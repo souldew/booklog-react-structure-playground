@@ -1,6 +1,6 @@
 import type { BookNote as BookNoteResponse } from "@/generated/model";
 
-import type { BookNote } from "../model";
+import type { BookNote } from "../../model";
 
 export function toBookNote(response: BookNoteResponse): BookNote {
   return {

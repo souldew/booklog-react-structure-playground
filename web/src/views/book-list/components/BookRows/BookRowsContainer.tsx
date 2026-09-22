@@ -1,6 +1,6 @@
-import { fetchBooks } from "@/features/book/apis/fetchBooks";
+import { fetchBooks } from "@/features/book/apis/functions/fetchBooks";
 
-import { updateBookStatus } from "../../apis/updateBookStatus";
+import { updateBookStatus } from "../../apis/functions/updateBookStatus";
 import { BookRows } from "./BookRows";
 
 // サーバーで取得して Presentational に渡す。Server Action もここから props で渡す。

@@ -41,7 +41,7 @@
 | 決めたこと | 内容 |
 |---|---|
 | 生成物の置き場 | `web/src/generated/`。git 管理外にはしない |
-| 生成型の扱い | Container までは import してよい。Presentational には mapper でドメイン型にして渡す |
+| 生成型の扱い | `apis/` の中だけで import する。`apis/functions/` と `apis/hooks/` が mapper を通してドメイン型で返し、Container 以降は生成型を知らない |
 | 生成する対象 | 型・fetch クライアント・TanStack Query の hook |
 | HTTP クライアント | orval の `mutator` で差し替えた fetch。`web/src/shared/apis/customFetch.ts` |
 | 設定 | `web/orval.config.ts`。`mode: tags-split` で tag ごとにファイルを分ける |
@@ -74,25 +74,29 @@ TanStack Query の `isError` と Server Action の `catch` で受けるほうが
 Route Handler はパスをそのまま `api` に渡すだけの中継にする。
 OpenAPI 上のパスと BFF のパスが一致するので、生成した hook は 3 経路で共通になる。
 
-### 生成型の境界は Presentational の手前
+### 生成型の境界は apis の出口
 
-生成した型と hook は、views や features の `apis/` と Container から直接 import してよい。
-**境界は Presentational の手前に引く。** Container が mapper を通してドメイン型に変換し、
-Presentational は生成型を知らない。
+生成した型と hook を import してよいのは、views や features の `apis/` の中だけ。
+**境界は `apis/` の出口に引く。** `apis/functions/` と `apis/hooks/` が `apis/mappers/` を通して
+ドメイン型に変換して返し、Container も Presentational も生成型を知らない。
+サブディレクトリの役割は [directory-conventions.md](directory-conventions.md) の「apis の内側」にある。
 
 ```
-generated/ の型・hook ──> Container / ClientContainer ── mapper ──> Presentational
+generated/ の型・hook ──> apis/functions ── apis/mappers ──> Container ──> Presentational
+generated/ の hook    ──> apis/hooks     ── apis/mappers ──> ClientContainer ──> Presentational
 ```
 
 | 層 | 生成型 |
 |---|---|
-| `apis/` | 触ってよい |
-| Container / ClientContainer | 触ってよい。mapper を呼ぶ場所 |
+| `apis/functions/` `apis/hooks/` | 触ってよい。mapper を呼ぶ場所 |
+| `apis/mappers/` | 型だけ触る。純粋関数 |
+| Container / ClientContainer | **触らない。** `apis/` からドメイン型を受け取る |
 | Presentational / Skeleton | **触らない。** props はドメイン型とフォームの値の型だけ |
 
 Presentational が生成型を持たないのは、story で API の型を知らずに済ませるためと、
-API スキーマの変更を mapper で止めるため。Container にも生成型を持ち込めない規則にすると、
-ClientContainer から生成した hook を呼べなくなり、hook を生成する意味が薄れる。
+API スキーマの変更を mapper で止めるため。Container まで生成型を知らなくできるのは、
+生成 hook を `apis/hooks/` で包む層があるため。この層が無いと ClientContainer が生成 hook を
+直接呼ぶしかなく、境界を Presentational の手前まで後退させることになる。
 
 ---
 
@@ -132,7 +136,7 @@ Storybook と Vitest を採用する。[directory-conventions.md](directory-conv
 | 対象 | 動かす場所 | 書くもの |
 |---|---|---|
 | story | browser（Vitest の storybook project） | Presentational と Skeleton だけ。Container は書かない |
-| `*.test.ts` | node | mapper・`lib/` の純粋関数 |
+| `*.test.ts` | node | `apis/mappers/` と `lib/` の純粋関数 |
 
 msw は入れない。story は Presentational で完結させ、通信をモックしない。
 Storybook は `web` にだけ置く。`api` は Vitest のみ。

@@ -1,6 +1,6 @@
 import type { BookStatus as BookStatusResponse } from "@/generated/model";
 
-import type { BookStatus } from "../model";
+import type { BookStatus } from "../../model";
 
 // 生成型 ⇄ ドメイン型の対応表。
 // satisfies を付けておくと、API 側に値が増えたときに抜けがコンパイルエラーになる。

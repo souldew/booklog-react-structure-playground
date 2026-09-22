@@ -1,8 +1,8 @@
 import { getBook } from "@/generated/books/books";
 import { ApiError } from "@/shared/apis/customFetch";
 
-import { toBook } from "../lib/toBook";
-import type { Book } from "../model";
+import { toBook } from "../mappers/toBook";
+import type { Book } from "../../model";
 
 // 404 は undefined で返す。notFound() を呼ぶかどうかは Container が決める。
 // mutator が 4xx を throw するので catch で受けるが、生成型の union は status で絞る必要がある。

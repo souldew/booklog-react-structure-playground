@@ -201,15 +201,15 @@ slice をディレクトリごと移しても、内側の相対パスは壊れ�
 
 | カテゴリ | 置くもの | FSD の segment |
 |---|---|---|
-| `apis/` | API 呼び出し。1 エンドポイント 1 ファイル | `api` |
+| `apis/` | API 境界。`functions/` `hooks/` `mappers/` の 3 つに分ける (後述)。`@/generated` を import してよい唯一のカテゴリ | `api` |
 | `components/` | コンポーネント | `ui` |
 | `layouts/` | 骨格。`children` を受け取る | `ui` |
 | `pages/` | 画面の骨格と組み立て | `ui` |
-| `hooks/` | フック | `model` |
+| `hooks/` | フック。通信しないもの。生成 hook を包むものは `apis/hooks/` | `model` |
 | `providers/` | Context の Provider と、それを読むフック | `model` |
 | `model/` | 業務の知識。型、型を導く `as const`、zod スキーマ、業務ルールの値 | `model` |
 | `constants/` | 画面の都合の値のうち複数箇所で使うもの。ラベルの辞書、共有する文言。1 箇所ならベタ書き。業務の値は入れず `model` に置く | `ui` |
-| `lib/` | 純粋関数 | `lib` |
+| `lib/` | 純粋関数。生成型を知らないもの。生成型 ⇄ ドメイン型の変換は `apis/mappers/` | `lib` |
 | `fixtures/` | story やテストで使うデータ | — |
 
 足りなければ、内容を表す名前のディレクトリを追加してよい (shared の `routes/` `config/` など)。
@@ -220,6 +220,7 @@ slice をディレクトリごと移しても、内側の相対パスは壊れ�
 |---|---|
 | `components/` `layouts/` | 常にディレクトリ。1 ファイルだけでも切る |
 | `pages/` | 常にフラット |
+| `apis/` | 常に `functions/` `hooks/` `mappers/` に分ける。1 ファイルだけでも切る。空のディレクトリは作らない |
 | それ以外 | 原則フラット。数が多くなったらディレクトリへの昇格を考える |
 
 ### コンポーネント 1 つの内部
@@ -249,9 +250,23 @@ Skeleton は基本、別のディレクトリにする。
 Provider と、それを読む `useContext` のフックはセットなので、両方を `providers/` に置く。
 Context 以外の状態管理 (zustand など) を入れる場合は、必要になった時点でディレクトリを切る。
 
-`apis/` は 1 エンドポイント 1 ファイル。base URL、ヘッダー、エラーレスポンスの変換など
-全エンドポイントに共通する部分は `shared/apis/` に置く。
-サーバーで呼ぶ API とクライアントで呼ぶ API の区別は、必要になってから決める。
+### apis の内側
+
+`apis/` は「通信するもの」ではなく「生成型を知ってよい場所」として切る。
+mapper は純粋関数だが `@/generated/model` を import するので、ドメインの純粋関数を置く `lib/` ではなく
+`apis/` の一部として扱う。これで `lib/` `components/` `hooks/` は `@/generated` を一切知らなくなる。
+
+| サブディレクトリ | 置くもの | 生成型 | 呼ぶ側 |
+|---|---|---|---|
+| `functions/` | 生成クライアントを呼び、mapper を通してドメイン型を返す async 関数。Server Action もここ。1 エンドポイント 1 ファイル | import する | Server Component の Container、`app/` の `loader` / `action` |
+| `hooks/` | 生成された TanStack Query の hook を包み、`select` などで mapper を通してドメイン型を返す hook | import する | ClientContainer |
+| `mappers/` | 生成型 ⇄ ドメイン型の純粋関数。副作用なし。テストは node で書く | 型だけ import する | `functions/` `hooks/` |
+
+`functions/` は `fetchers` にすると更新系が収まらないので、この名前にしている。
+`hooks/` は最初の ClientContainer ができるまで作らない。
+
+base URL、ヘッダー、エラーレスポンスの変換など全エンドポイントに共通する部分は `shared/apis/` に置く。
+`shared/apis/` はエンドポイントを持たないので、この 3 分割は適用せずフラットのままでよい。
 
 ### model と constants の線引き
 

@@ -182,12 +182,12 @@ api/  zod スキーマ  →  openapi.yaml  →  web/src/generated/
 
 ルートの `pnpm openapi` が 2 つを続けて実行する。生成の設定は [tech-stack.md §3](tech-stack.md) にある。
 
-生成した型を **Presentational に渡さない。** Container が mapper を通し、
-生成型からドメイン型・フォームの値の型へ変換してから渡す。この境界を持つことが目的なので、
-省略すると分離した意味が無くなる。`apis/` や Container が生成型を import するのはよい。
+生成した型を **`apis/` の外に出さない。** `apis/functions/` と `apis/hooks/` が `apis/mappers/` を通し、
+生成型からドメイン型・フォームの値の型へ変換してから返す。この境界を持つことが目的なので、
+省略すると分離した意味が無くなる。生成型を import するのは `apis/` の中だけ。
 
 ```
-生成型 ──> Container ── mapper ──> ドメイン型 ──> Presentational
+生成型 ──> apis/functions ── apis/mappers ──> ドメイン型 ──> Container ──> Presentational
 ```
 
 ### Hono RPC を使わない理由

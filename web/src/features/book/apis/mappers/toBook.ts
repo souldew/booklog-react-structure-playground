@@ -1,6 +1,6 @@
 import type { Book as BookResponse } from "@/generated/model";
 
-import type { Book } from "../model";
+import type { Book } from "../../model";
 import { toBookStatus } from "./mapBookStatus";
 
 // 生成型 → ドメイン型。API スキーマの変更はこの関数で止める。

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { toBookStatusResponse } from "@/features/book/lib/mapBookStatus";
+import { toBookStatusResponse } from "@/features/book/apis/mappers/mapBookStatus";
 import type { BookStatus } from "@/features/book/model";
 import { updateBook } from "@/generated/books/books";
 import type { ActionResult } from "@/shared/apis/actionResult";

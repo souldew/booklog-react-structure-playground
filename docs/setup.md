@@ -189,11 +189,14 @@ Base UI の `Select` はクライアントの状態を持つので、まず素�
 | 層 | 置いたもの |
 |---|---|
 | `app/` | `/` → `/books` のリダイレクト、`books/layout.tsx` の Provider マウント、`page.tsx` の結線、`error.tsx` |
-| `views/book-list/` | Page、Container、絞り込み欄、行、Skeleton、`apis/updateBookStatus.ts` の Server Action。文言は 1 箇所ずつなのでベタ書き |
+| `views/book-list/` | Page、Container、絞り込み欄、行、Skeleton、`apis/functions/updateBookStatus.ts` の Server Action。文言は 1 箇所ずつなのでベタ書き |
 | `views/book-detail/` | Page、Container、書誌情報とメモ一覧の Presentational / Container / Skeleton |
-| `features/book/` | `model.ts` に絞り込み条件の型、`constants.ts` にラベル辞書、`providers/` `apis/` `lib/filterBooks.ts` `components/BookStatusBadge/` |
-| `features/book-note/` | `model.ts` `lib/toBookNote.ts` `apis/fetchBookNotes.ts` |
+| `features/book/` | `model.ts` に絞り込み条件の型、`constants.ts` にラベル辞書、`providers/` `apis/functions/` `apis/mappers/` `lib/filterBooks.ts` `components/BookStatusBadge/` |
+| `features/book-note/` | `model.ts` `apis/mappers/toBookNote.ts` `apis/functions/fetchBookNotes.ts` |
 | `shared/` | `apis/actionResult.ts` `lib/formatDate.ts` |
+
+mapper は当初 `lib/` に置いていたが、`@/generated/model` を import するので `apis/mappers/` へ移した。
+これで生成型を知るのは `apis/` の中だけになる ([directory-conventions.md](directory-conventions.md) の「apis の内側」)。
 
 ### 気づいた点
 

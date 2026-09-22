@@ -3,7 +3,7 @@
 // Presentational はこちらだけを知る。
 
 // 値の一覧も要る (絞り込みの選択肢など) ので、配列から型を導く。
-// API の on_hold はドメインでは onHold。この差を lib/mapBookStatus.ts が埋める。
+// API の on_hold はドメインでは onHold。この差を apis/mappers/mapBookStatus.ts が埋める。
 export const BOOK_STATUSES = ["unread", "reading", "onHold", "finished"] as const;
 export type BookStatus = (typeof BOOK_STATUSES)[number];
 
