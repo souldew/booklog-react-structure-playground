@@ -245,13 +245,25 @@ pnpm dlx storybook@10.6.0 init --type nextjs --builder vite --features docs test
 | `package.json` | `test` (`vitest run`) と `test:watch` を追加。ルートにも `test` (`pnpm -r test`) を追加 |
 | `.gitignore` | `storybook-static/` と `*storybook.log` を追加 |
 
-### 最初に書いたもの
+### 書いたもの
 
 | 種別 | ファイル |
 |---|---|
-| fixtures | `features/book/fixtures/books.ts`。状態ごとに 1 冊 |
-| story | `BookStatusBadge` `BookRow` (更新失敗の play 付き) `BookRowsSkeleton` |
-| test | `apis/mappers/mapBookStatus` `apis/mappers/toBook` `lib/filterBooks` `shared/lib/formatDate` |
+| fixtures | `features/book/fixtures/books.ts` (状態ごとに 1 冊)、`features/book-note/fixtures/bookNotes.ts` (改行入りを 1 件含む) |
+| story (features) | `BookStatusBadge` |
+| story (book-list) | `BookRow` (更新失敗の play)、`BookRows`、`BookRowsSkeleton`、`BookFilterField` (入力の play)、`BookListPage` (絞り込みで行が減る play) |
+| story (book-detail) | `BookInfo` `BookInfoSkeleton` `BookNoteList` (空あり) `BookNoteListSkeleton` `BookDetailPage` (両方ロード中・書誌情報だけ・メモだけロード中) |
+| test | `apis/mappers/mapBookStatus` `apis/mappers/toBook` `apis/mappers/toBookNote` `lib/filterBooks` `shared/lib/formatDate` |
+
+Page の story はスロットに取得後の Presentational や Skeleton を直接渡す。Container と Suspense は story では使わない。
+Provider を読む部品 (`BookFilterField` `BookRows` と両者を含む `BookListPage`) は decorator で `BookFilterProvider` に包む。
+`BookListPage` の play で、入力欄と行が同じ Provider を読んで絞り込みが効くことを確かめている。
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| story を増やした初回の実行で `Failed to fetch dynamically imported module` が出て 5 件落ちる。2 回目は通る | Vite が `@base-ui/react/input` と `lucide-react` をテスト中に最適化して再読み込みしたため。storybook project の `optimizeDeps.include` に UI 部品が使う外部依存を列挙して、最初から最適化させる |
 
 ### 確認
 
@@ -276,5 +288,3 @@ Playwright はシステムライブラリ無しで入る。WSL の Ubuntu では
 | | 入れる段階 |
 |---|---|
 | `/settings/*` `/stats/monthly` `/notes/recent` のエンドポイント | 段階 4 と 5 |
-| `BookInfo` `BookNoteList` とその Skeleton、`BookFilterField` `BookRows`、両 Page の story | 段階 1 の残り。導入時は動作確認に必要な 3 つだけ書いた |
-| `toBookNote` のテスト | 同上 |

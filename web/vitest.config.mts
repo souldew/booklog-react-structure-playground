@@ -27,6 +27,19 @@ export default defineConfig({
       {
         extends: true,
         plugins: [storybookTest({ configDir: path.join(dirname, ".storybook") })],
+        // components/ui が使う外部依存。列挙しないと Vite がテスト中に最適化して再読み込みし、
+        // 初回の実行だけ story が落ちる (docs/setup.md §9)。
+        optimizeDeps: {
+          include: [
+            "@base-ui/react/button",
+            "@base-ui/react/input",
+            "@base-ui/react/merge-props",
+            "@base-ui/react/use-render",
+            "class-variance-authority",
+            "cn",
+            "lucide-react",
+          ],
+        },
         test: {
           name: "storybook",
           browser: {
