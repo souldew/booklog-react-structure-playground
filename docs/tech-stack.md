@@ -43,7 +43,12 @@
 | 生成物の置き場 | `web/src/generated/`。git 管理外にはしない |
 | 生成型の扱い | Container までは import してよい。Presentational には mapper でドメイン型にして渡す |
 | 生成する対象 | 型・fetch クライアント・TanStack Query の hook |
-| HTTP クライアント | orval の `mutator` で差し替えた fetch。`shared/apis/` に置く |
+| HTTP クライアント | orval の `mutator` で差し替えた fetch。`web/src/shared/apis/customFetch.ts` |
+| 設定 | `web/orval.config.ts`。`mode: tags-split` で tag ごとにファイルを分ける |
+| hook の生成 | orval の既定に任せる。GET が `useQuery`、それ以外が `useMutation` |
+
+`override.query` の `useQuery` / `useMutation` を明示的に `true` にすると、
+全メソッドに両方の hook が生えて GET に `useMutation` が付く。既定のままにしておく。
 
 ### 生成した hook と通信経路の整合
 
@@ -57,7 +62,14 @@
 | ブラウザ、BFF を試す Container | `/api` | `web/app/api/` の Route Handler が `api` へ中継 |
 
 mutator はサーバーかブラウザかを実行時に判定して上 2 つを選ぶ。
-3 つ目は、その Container だけがリクエストのオプションで base URL を `/api` に上書きする。
+3 つ目は、その Container だけが生成された hook の `request` オプションで上書きする。
+
+```ts
+useListBooks(params, { request: { baseUrl: "/api" } });
+```
+
+mutator は 4xx / 5xx を `ApiError` として throw する。生成型の union には 404 の分岐もあるが、
+TanStack Query の `isError` と Server Action の `catch` で受けるほうが素直なので、そちらに寄せる。
 
 Route Handler はパスをそのまま `api` に渡すだけの中継にする。
 OpenAPI 上のパスと BFF のパスが一致するので、生成した hook は 3 経路で共通になる。

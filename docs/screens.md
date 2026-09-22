@@ -106,7 +106,7 @@ SQLite に永続化する。テーブル定義とエンドポイントは [backe
 | `id` | `string` | |
 | `title` | `string` | |
 | `author` | `string` | |
-| `status` | `'unread' \| 'reading' \| 'finished'` | 一覧のトグルで更新する |
+| `status` | `'unread' \| 'reading' \| 'onHold' \| 'finished'` | 一覧のトグルで更新する。API の `on_hold` は mapper で `onHold` になる |
 | `totalPages` | `number` | |
 | `createdAt` | `string` | ISO 8601 |
 

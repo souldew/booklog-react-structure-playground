@@ -1,0 +1,408 @@
+openapi: 3.1.0
+info:
+  title: booklog api
+  version: 0.1.0
+  description: 読書管理デモの API。web からは Server Component / Server Action / ブラウザの 3 経路で呼ばれる。
+servers:
+  - url: http://localhost:8787
+components:
+  schemas:
+    Book:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        author:
+          type: string
+        status:
+          $ref: "#/components/schemas/BookStatus"
+        total_pages:
+          type: integer
+        created_at:
+          type: string
+      required:
+        - id
+        - title
+        - author
+        - status
+        - total_pages
+        - created_at
+    BookStatus:
+      type: string
+      enum:
+        - unread
+        - reading
+        - on_hold
+        - finished
+    BookCreate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        author:
+          type: string
+          minLength: 1
+        total_pages:
+          type: integer
+          exclusiveMinimum: 0
+        status:
+          $ref: "#/components/schemas/BookStatus"
+      required:
+        - title
+        - author
+        - total_pages
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+    BookUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        author:
+          type: string
+          minLength: 1
+        total_pages:
+          type: integer
+          exclusiveMinimum: 0
+        status:
+          $ref: "#/components/schemas/BookStatus"
+    BookNote:
+      type: object
+      properties:
+        id:
+          type: integer
+        book_id:
+          type: integer
+        page:
+          type: integer
+        body:
+          type: string
+        created_at:
+          type: string
+      required:
+        - id
+        - book_id
+        - page
+        - body
+        - created_at
+    BookNoteCreate:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 0
+        body:
+          type: string
+          minLength: 1
+      required:
+        - page
+        - body
+    BookNoteUpdate:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 0
+        body:
+          type: string
+          minLength: 1
+    BookProgress:
+      type: object
+      properties:
+        book_id:
+          type: integer
+        current_page:
+          type: integer
+        updated_at:
+          type: string
+      required:
+        - book_id
+        - current_page
+        - updated_at
+    BookProgressUpdate:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          minimum: 0
+      required:
+        - current_page
+  parameters: {}
+paths:
+  /books:
+    get:
+      tags: &a1
+        - books
+      operationId: listBooks
+      parameters:
+        - schema:
+            $ref: "#/components/schemas/BookStatus"
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            description: title と author の部分一致
+          required: false
+          description: title と author の部分一致
+          name: keyword
+          in: query
+      responses:
+        "200":
+          description: 本の一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+    post:
+      tags: *a1
+      operationId: createBook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookCreate"
+      responses:
+        "201":
+          description: 作成した本
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+  /books/{bookId}:
+    get:
+      tags: *a1
+      operationId: getBook
+      parameters:
+        - schema:
+            type: string
+            example: "1"
+          required: true
+          name: bookId
+          in: path
+      responses:
+        "200":
+          description: 本の詳細
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "404":
+          description: 本が無い
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      tags: *a1
+      operationId: updateBook
+      parameters:
+        - schema:
+            type: string
+            example: "1"
+          required: true
+          name: bookId
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookUpdate"
+      responses:
+        "200":
+          description: 更新後の本
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "404":
+          description: 本が無い
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /books/{bookId}/notes:
+    get:
+      tags: &a2
+        - book-notes
+      operationId: listBookNotes
+      parameters:
+        - schema:
+            type: string
+            example: "1"
+          required: true
+          name: bookId
+          in: path
+      responses:
+        "200":
+          description: 本に付いたメモの一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BookNote"
+        "404":
+          description: 本またはメモが無い
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags: *a2
+      operationId: createBookNote
+      parameters:
+        - schema:
+            type: string
+            example: "1"
+          required: true
+          name: bookId
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookNoteCreate"
+      responses:
+        "201":
+          description: 作成したメモ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookNote"
+        "404":
+          description: 本またはメモが無い
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /books/{bookId}/notes/{noteId}:
+    patch:
+      tags: *a2
+      operationId: updateBookNote
+      parameters:
+        - schema:
+            type: string
+            example: "1"
+          required: true
+          name: bookId
+          in: path
+        - schema:
+            type: string
+            example: "1"
+          required: true
+          name: noteId
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookNoteUpdate"
+      responses:
+        "200":
+          description: 更新後のメモ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookNote"
+        "404":
+          description: 本またはメモが無い
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      tags: *a2
+      operationId: deleteBookNote
+      parameters:
+        - schema:
+            type: string
+            example: "1"
+          required: true
+          name: bookId
+          in: path
+        - schema:
+            type: string
+            example: "1"
+          required: true
+          name: noteId
+          in: path
+      responses:
+        "204":
+          description: 削除した
+        "404":
+          description: 本またはメモが無い
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /books/{bookId}/progress:
+    get:
+      tags: &a3
+        - book-progress
+      operationId: getBookProgress
+      parameters:
+        - schema:
+            type: string
+            example: "1"
+          required: true
+          name: bookId
+          in: path
+      responses:
+        "200":
+          description: 本の読書進捗
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookProgress"
+        "404":
+          description: 本が無い
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      tags: *a3
+      operationId: updateBookProgress
+      parameters:
+        - schema:
+            type: string
+            example: "1"
+          required: true
+          name: bookId
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookProgressUpdate"
+      responses:
+        "200":
+          description: 更新後の読書進捗
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookProgress"
+        "404":
+          description: 本が無い
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+webhooks: {}

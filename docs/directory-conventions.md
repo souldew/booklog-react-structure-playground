@@ -173,8 +173,8 @@ slice を持たない `shared` の中も、同じ規約で並べる。
 ### slice 直下の形
 
 slice の直下にはカテゴリのディレクトリだけを置く。
-例外は `constants` と `types` で、1 ファイルで済むうちは `constants.ts` `types.ts` として直下に置いてよい。
-増えたら `constants/` `types/` のディレクトリに昇格させる。
+例外は `model` と `constants` で、1 ファイルで済むうちは `model.ts` `constants.ts` として直下に置いてよい。
+増えたら `model/` `constants/` のディレクトリに昇格させる。
 
 公開面としての `index.ts` は置かない。経由を強制する仕組みは作れるがコストが高く、
 経由しない import が混ざると index の保守のほうが面倒になる。
@@ -207,8 +207,8 @@ slice をディレクトリごと移しても、内側の相対パスは壊れ�
 | `pages/` | 画面の骨格と組み立て | `ui` |
 | `hooks/` | フック | `model` |
 | `providers/` | Context の Provider と、それを読むフック | `model` |
-| `types/` | 型 | `model` |
-| `constants/` | 定数 | `model` |
+| `model/` | 業務の知識。型、型を導く `as const`、zod スキーマ、業務ルールの値 | `model` |
+| `constants/` | 画面の都合の値。文言、ラベルの辞書、表示件数。業務の値は入れず `model` に置く | `ui` |
 | `lib/` | 純粋関数 | `lib` |
 | `fixtures/` | story やテストで使うデータ | — |
 
@@ -253,10 +253,27 @@ Context 以外の状態管理 (zustand など) を入れる場合は、必要に
 全エンドポイントに共通する部分は `shared/apis/` に置く。
 サーバーで呼ぶ API とクライアントで呼ぶ API の区別は、必要になってから決める。
 
-### 型の置き場
+### model と constants の線引き
 
-1 ファイルで済むうちは slice 直下に `types.ts`、増えたら `types/` ディレクトリ。
-API レスポンスの型と画面で使う型は分ける。
+「値を変えたときに、業務の人に聞かないと決められないか」で分ける。
+
+| | 入るもの | 例 |
+|---|---|---|
+| `model` | 業務の知識。型と、型を導く元になる `as const` の値、zod スキーマ、スキーマが参照する上限値や既定値 | `Book` `BOOK_STATUSES` `MAX_NOTES_PER_BOOK` |
+| `constants` | 画面の都合で決まる値。業務の意味を変えずに書き換えられるもの。**業務の値は入れない。`model` に置く** | 表示文言、`Record<BookStatus, string>` のラベル辞書、1 画面の表示件数 |
+
+`types` という名前にしないのは、型を導く `as const` の配列や zod スキーマのように、
+型と値が同じ出典になるものを分けずに置くため。型だけのファイルに値が漏れる、という状態を作らない。
+
+依存の向きは一方向にする。`constants` が `model` の型や値を参照するのはよい
+（ラベル辞書に `satisfies Record<BookStatus, string>` を付ける、文言に上限値を埋め込む、など）。
+`model` から `constants` は参照しない。参照したくなったら、その定数は業務ルールなので `model` に移す。
+
+`model.ts` が大きくなって `model/` に昇格するとき、型を導かない業務定数は当面 `model/constants.ts` に置く。
+slice 直下の `constants/` とは名前が重なるが、中身は「業務の値」と「画面の値」で重ならない。
+概念ごとに割るかどうかは、大きくなった時点で考える。
+
+API レスポンスの型（生成型）と画面で使う型（ドメイン型）は分ける。前者は `generated/`、後者は `model`。
 
 ### 命名
 

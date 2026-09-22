@@ -53,7 +53,7 @@ npm と違い、**ワークスペースの定義は `package.json` の `workspac
 
 `node:sqlite` を使う。**Node 26 に同梱されていて追加依存が要らない。**
 
-ORM は入れない。テーブルが3つで、クエリも単純なため。
+ORM は入れない。テーブルが 5 つで、クエリも単純なため。
 スキーマ駆動で型が欲しくなったら Drizzle を検討する。
 
 ```
@@ -61,9 +61,23 @@ api/
 ├── db/
 │   ├── schema.sql        テーブル定義
 │   ├── seed.ts           初期データ
-│   └── client.ts         DatabaseSync のインスタンス
+│   ├── client.ts         DatabaseSync のインスタンス。getDb() で遅延して開く
+│   └── reset.ts          pnpm db:reset の実体
+├── src/
+│   ├── index.ts          serve
+│   ├── app.ts            middleware とルートの結線、/doc
+│   ├── openapi.ts        pnpm openapi の実体
+│   ├── schemas.ts        zod スキーマ
+│   ├── routes/           1 リソース 1 ファイル
+│   ├── middleware/       delay と fail
+│   └── lib/
+├── openapi.yaml          生成物。git 管理する
 └── booklog.db            git 管理外
 ```
+
+`booklog.db` が無い状態で最初に DB へアクセスすると、スキーマ作成とシード投入を自動で行う。
+`pnpm dev` だけで動く状態にするため。`getDb()` を import 時ではなく呼び出し時に開くのは、
+`pnpm openapi` が DB を必要としないため。
 
 | テーブル | 主キー | 備考 |
 |---|---|---|
@@ -107,6 +121,20 @@ api/
 `notes` に `:noteId` が付き `progress` に付かないのが、
 コレクションと単一リソースの違いがそのまま出ている箇所。
 
+### レスポンスの形は DB に寄せる
+
+レスポンスのフィールド名は DB の列名と同じ **snake_case** にし、`id` は **整数**のまま返す。
+`web` 側のドメイン型は camelCase で `id` は `string` なので、mapper に
+`total_pages → totalPages`、`id: number → string` という実体のある変換ができる。
+API と画面の型が最初から一致していると、mapper が素通しになって境界の意味が見えない。
+
+enum の値も同じ理由で snake_case にしてある。`status` の `on_hold` は生成側でも
+`BookStatus.on_hold` のままで、ドメインの `onHold` との対応表を mapper が持つ。
+対応表に `satisfies Record<生成型, ドメイン型>` を付けておくと、API に値が増えたときに抜けがコンパイルエラーになる。
+
+バリデーションに失敗したリクエストは 400 で `{ message, issues }` を返す。
+存在しない本やメモは 404 で `{ message }` を返す。
+
 ### ダッシュボードに集約エンドポイントを作らない
 
 `GET /dashboard` を作ると1回の待ちにまとまってしまい、
@@ -130,6 +158,8 @@ api/
 | その他 | 200ms |
 
 ダッシュボードのパネルが別々のタイミングで出るように、意図的にばらしてある。
+`/doc` には遅延を入れない。`API_DELAY=0` を付けて起動すると全部の遅延を止められる。
+curl での確認やスクリプトから叩くときに使う。
 
 エラー表示を確認するために、`?fail=1` を付けたリクエストは 500 を返す。
 特定の id だけ必ず失敗する、といった仕掛けは入れない。
@@ -146,9 +176,11 @@ api/  zod スキーマ  →  openapi.yaml  →  web/src/generated/
 
 | 段階 | 成果物 |
 |---|---|
-| `api` のルート定義 | zod スキーマ |
-| `pnpm openapi` | `openapi.yaml` |
-| `web` の生成 | `web/src/generated/` |
+| `api` のルート定義 | zod スキーマ（`api/src/schemas.ts`） |
+| `pnpm --filter api openapi` | `api/openapi.yaml` |
+| `pnpm --filter web codegen` | `web/src/generated/`。orval が型・fetch クライアント・hook を生成 |
+
+ルートの `pnpm openapi` が 2 つを続けて実行する。生成の設定は [tech-stack.md §3](tech-stack.md) にある。
 
 生成した型を **Presentational に渡さない。** Container が mapper を通し、
 生成型からドメイン型・フォームの値の型へ変換してから渡す。この境界を持つことが目的なので、
@@ -218,4 +250,5 @@ pnpm openapi         # openapi.yaml の出力と web 側の型生成
 ```
 
 `web` は `API_BASE_URL`（サーバー側）と `NEXT_PUBLIC_API_BASE_URL`（ブラウザ側）で `api` を参照する。
-どちらも `web/.env.local` に置く。
+どちらも `web/.env.local` に置く。`web/.env.example` をコピーすればローカルの既定値になる。
+未設定のときは `http://localhost:8787` に落ちる。

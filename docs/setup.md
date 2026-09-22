@@ -129,13 +129,56 @@ pnpm --filter web dev    # http://localhost:3000 が 200 を返す
 
 ---
 
+## 7. 段階 0: `api` と型生成
+
+```bash
+pnpm --filter api add @hono/zod-openapi zod
+pnpm --filter api add -D yaml
+pnpm --filter web add @tanstack/react-query
+pnpm --filter web add -D orval
+```
+
+`yaml` は `openapi.yaml` を書き出すスクリプトだけが使う。
+`@tanstack/react-query` を段階 0 で入れるのは、orval が生成する hook がこれを import するため。
+画面から使うのは `XxxClientContainer` を作る段階から。
+
+`api` のコードは手で書いた。構成は [backend.md §3](backend.md) にある。
+`api/tsconfig.json` は `rootDir` を外して `db/` も対象にし、`.ts` 拡張子付きの import を許可した。
+
+```bash
+pnpm openapi                 # api/openapi.yaml → web/src/generated/
+pnpm db:reset                # api/booklog.db を作り直してシード投入
+cp web/.env.example web/.env.local
+```
+
+### つまずいた点
+
+| 現象 | 対処 |
+|---|---|
+| `app.use(...).route(...)` とチェーンすると `doc31` が型に無いと言われる | `.use()` の戻り値は素の Hono 型。チェーンせず文に分ける |
+| orval が GET に `useMutation`、POST に `useQuery` も生成した | `override.query` の `useQuery` / `useMutation` を消して既定に戻す |
+| 生成された `Error` 型がグローバルの `Error` と同名になった | zod スキーマ側の名前を `ErrorResponse` にする |
+
+### 確認
+
+```bash
+pnpm --filter api typecheck
+pnpm --filter web typecheck   # next typegen && tsc --noEmit
+pnpm lint
+pnpm format:check
+API_DELAY=0 pnpm --filter api dev   # curl で全エンドポイントを叩いた
+```
+
+生成クライアント → mutator → `api` → mapper の経路は、Node から `listBooks()` と `toBook()` を呼んで確かめた。
+404 は `ApiError` として throw される。
+
+---
+
 ## 未実施
 
 この時点では入れていないもの。それぞれの段階で入れる。
 
 | | 入れる段階 |
 |---|---|
-| `node:sqlite` のスキーマとシード、`db:reset` | 段階 0 |
-| `@hono/zod-openapi`、`openapi` スクリプト、orval | 段階 0 |
-| TanStack Query | `XxxClientContainer` を作る画面 |
+| `/settings/*` `/stats/monthly` `/notes/recent` のエンドポイント | 段階 4 と 5 |
 | Storybook、Vitest | 最初の Presentational を作るとき |
