@@ -38,7 +38,16 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+// ボタンの見た目のリンクが、リンクとして読まれること (Button の render だと role="button" になる)。
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("link", { name: "本を追加" })).toHaveAttribute(
+      "href",
+      "/books/new",
+    );
+  },
+};
 
 export const Loading: Story = {
   args: { rows: <BookRowsSkeleton /> },

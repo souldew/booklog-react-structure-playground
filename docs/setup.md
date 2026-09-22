@@ -274,7 +274,7 @@ Skeleton から中身への切り替わりは、Page の story の `parameters.s
 | `NoLayoutShift` が「248 が 244 になる」と落ちた | `BookInfoSkeleton` が本物より 4px 低かった。行が `h-4` で `gap-y-3`、本物は text-sm の 20px 行で `gap-y-2`。Skeleton を `h-5` と `gap-y-2` に揃え、Badge の行は丸角にした。`BookNoteListSkeleton` も同じ計算で 1 件 4px 低く、メタ行 `h-4`・本文 `h-5`・`space-y-1` に直した。検査が実際にずれを見つけた例 |
 | Page ごとに遅延つきの story を render で手書きすると繰り返しが多い | 「スロット名 → Skeleton」の対応だけが Page 固有で、残りは定型。定型を `.storybook/` の decorator に寄せ、story は `parameters.slots` の 1 行にした |
 | Skeleton と中身を並べて比べる `WithSkeleton` story | 一度書いたが削除した。ツールバーの遅延で切り替わりが見えるようになり役目が無くなった上、別コンポーネントの Skeleton を story の中で描くのは「1 ディレクトリ = story 1 ファイル」の単位を跨ぐため |
-| story の実行中に Base UI が `nativeButton` の警告を出す | `Button` に `render={<Link />}` を渡している箇所。`<a>` を描くのに `nativeButton` が既定の true のまま。テストは落ちない。`nativeButton={false}` を付ければ消える。未対応 |
+| story の実行中に Base UI が `nativeButton` の警告を出す | `Button` に `render={<Link />}` を渡している箇所。`<a>` を描くのに `nativeButton` が既定の true のまま。テストは落ちない。段階 2 で `buttonVariants` + `Link` に直した (§10) |
 | `apis/functions` のテストで msw を試して戻した | orval 8.36 の `output.mock` は `mock: { generators: [{ type: "msw" }, { type: "faker" }] }` の形 (`mock: { type: "msw" }` は TypeError)。生成された handler は 200 固定で 404 / 500 は手書きになり、省ける量が無かった。`msw/node` は Node 26 で `localStorage` の `ExperimentalWarning` も出す。依存・生成物・設定をすべて外し、`fetch` のスタブに戻した。理由と再検討の条件は [tech-stack.md §7](tech-stack.md) |
 | `pnpm remove` のあとも lockfile に msw が残る | peer として解決した snapshot が残るため。`git checkout -- pnpm-lock.yaml` で戻し、`pnpm install --frozen-lockfile` が通ることを確認した |
 
@@ -326,7 +326,7 @@ Playwright はシステムライブラリ無しで入る。WSL の Ubuntu では
 |---|---|
 | 検証エラーの story で送信してもメッセージが出ない | `<input type="number" min={1}>` に `0` を入れるとブラウザの制約検証が送信を止める。`<form noValidate>` にして検証を Server Action に寄せた |
 | 編集画面で status の select を `disabled` にすると FormData に `status` が無い | 論点そのもの (docs/backend.md §1)。`parseBookForm` は `submittedStatus: undefined` として返し、`toBookUpdate` は body に含めない。ブラウザで保存して api の `status` が変わらないことを確認した |
-| `Button` に `render={<Link />}` を渡すと Base UI が `nativeButton` の警告を出す | `<a>` を描くので `nativeButton={false}` を付けた。段階 1 の 3 箇所 |
+| `Button` に `render={<Link />}` を渡すと Base UI が `nativeButton` の警告を出す | 最初は `nativeButton={false}` を付けて警告だけ消したが、Base UI の `Button` は `render` 先にも `role="button"` を付けるので `<a>` がリンクとして読まれない (ヘッドレスブラウザのスナップショットでも `button "編集"` になっていた)。`Button` を使わず `buttonVariants()` を `className` に当てた素の `Link` に変えた。段階 1 の 3 箇所。story の play で `getByRole("link")` が取れることを確かめる |
 
 ### 確認
 

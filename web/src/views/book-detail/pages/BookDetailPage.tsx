@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 type Props = {
   bookId: string;
@@ -22,11 +22,18 @@ export function BookDetailPage({ bookId, info, notes }: Props) {
           </Link>
           <h1 className="text-xl font-semibold">本の詳細</h1>
         </div>
+        {/* リンクをボタンの見た目にする。Button の render に Link を渡すと role="button" が付いてリンクの意味が消えるので、
+            buttonVariants で見た目だけ借りて素の Link を描く */}
         <div className="flex gap-2">
-          <Button variant="outline" render={<Link href={`/books/${bookId}/progress`} />}>
+          <Link
+            href={`/books/${bookId}/progress`}
+            className={buttonVariants({ variant: "outline" })}
+          >
             進捗を更新
-          </Button>
-          <Button render={<Link href={`/books/${bookId}/edit`} />}>編集</Button>
+          </Link>
+          <Link href={`/books/${bookId}/edit`} className={buttonVariants()}>
+            編集
+          </Link>
         </div>
       </div>
 

@@ -163,6 +163,10 @@ shadcn 製のコンポーネントは、外からのラップでは要件を満�
 
 CLI が書く場所はファイル名も CLI の流儀に従い、story は書かない。
 
+リンクをボタンの見た目にするときは、`Button` の `render` に `Link` を渡さず、`buttonVariants()` を `className` に当てた
+素の `Link` を描く。Base UI の `Button` は `render` 先にも `role="button"` を付けるので、`<a>` がリンクとして読まれなくなる。
+`nativeButton={false}` は警告を消すだけで role は直らない。
+
 ---
 
 ## 3. slice の中身

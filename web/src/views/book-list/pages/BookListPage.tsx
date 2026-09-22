@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Table, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { BookFilterField } from "../components/BookFilterField/BookFilterField";
@@ -18,7 +18,10 @@ export function BookListPage({ rows }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">本</h1>
-        <Button render={<Link href="/books/new" />}>本を追加</Button>
+        {/* リンクをボタンの見た目にする。Button の render だと role="button" になるので buttonVariants で見た目だけ借りる */}
+        <Link href="/books/new" className={buttonVariants()}>
+          本を追加
+        </Link>
       </div>
       <BookFilterField />
       <Table>

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { within } from "storybook/test";
+import { expect, within } from "storybook/test";
 
 import { BOOK_NOTE_FIXTURES } from "@/features/book-note/fixtures/bookNotes";
 import { BOOK_FIXTURES } from "@/features/book/fixtures/books";
@@ -29,7 +29,17 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+// ボタンの見た目のリンクが、リンクとして読まれること (Button の render だと role="button" になる)。
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("link", { name: "編集" })).toHaveAttribute(
+      "href",
+      "/books/2/edit",
+    );
+    await expect(canvas.getByRole("link", { name: "進捗を更新" })).toBeVisible();
+  },
+};
 
 // 両方の境界がまだ解決していない状態。
 export const Loading: Story = {
