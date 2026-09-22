@@ -75,6 +75,9 @@ importers:
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
     devDependencies:
       '@storybook/addon-docs':
         specifier: ^10.6.0
@@ -102,7 +105,7 @@ importers:
         version: 4.1.11(playwright@1.63.0)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))(vitest@4.1.11)
       orval:
         specifier: ^8.36.0
-        version: 8.36.0(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@tanstack/react-query@5.103.2(react@19.2.8))(typescript@5.9.3)(zod@3.25.76)
+        version: 8.36.0(@modelcontextprotocol/sdk@1.30.0(zod@4.6.5))(@tanstack/react-query@5.103.2(react@19.2.8))(typescript@5.9.3)(zod@4.6.5)
       playwright:
         specifier: ^1.63.0
         version: 1.63.0
@@ -4403,6 +4406,29 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@modelcontextprotocol/sdk@1.30.0(zod@4.6.5)':
+    dependencies:
+      '@hono/node-server': 2.1.1(hono@4.13.8)
+      ajv: 8.20.0
+      ajv-formats: 3.0.1(ajv@8.20.0)
+      content-type: 1.0.5
+      cors: 2.8.6
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.1.1
+      express: 5.2.1
+      express-rate-limit: 8.7.0(express@5.2.1)
+      hono: 4.13.8
+      jose: 6.2.12
+      json-schema-typed: 8.0.2
+      pkce-challenge: 5.0.1
+      raw-body: 3.0.2
+      zod: 4.6.5
+      zod-to-json-schema: 3.25.2(zod@4.6.5)
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
+
   '@napi-rs/wasm-runtime@1.2.4(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0)':
     dependencies:
       '@emnapi/core': 1.11.0
@@ -4493,10 +4519,10 @@ snapshots:
     transitivePeerDependencies:
       - '@faker-js/faker'
 
-  '@orval/hono@8.36.0(typescript@5.9.3)(zod@3.25.76)':
+  '@orval/hono@8.36.0(typescript@5.9.3)(zod@4.6.5)':
     dependencies:
       '@orval/core': 8.36.0
-      '@orval/zod': 8.36.0(zod@3.25.76)
+      '@orval/zod': 8.36.0(zod@4.6.5)
       fs-extra: 11.4.0
     optionalDependencies:
       typescript: 5.9.3
@@ -4504,13 +4530,13 @@ snapshots:
       - '@faker-js/faker'
       - zod
 
-  '@orval/mcp@8.36.0(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(zod@3.25.76)':
+  '@orval/mcp@8.36.0(@modelcontextprotocol/sdk@1.30.0(zod@4.6.5))(zod@4.6.5)':
     dependencies:
       '@orval/core': 8.36.0
       '@orval/fetch': 8.36.0
-      '@orval/zod': 8.36.0(zod@3.25.76)
+      '@orval/zod': 8.36.0(zod@4.6.5)
     optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.30.0(zod@4.6.5)
     transitivePeerDependencies:
       - '@faker-js/faker'
       - zod
@@ -4551,13 +4577,13 @@ snapshots:
     transitivePeerDependencies:
       - '@faker-js/faker'
 
-  '@orval/zod@8.36.0(zod@3.25.76)':
+  '@orval/zod@8.36.0(zod@4.6.5)':
     dependencies:
       '@orval/core': 8.36.0
       jsesc: 3.1.0
       remeda: 2.50.0
     optionalDependencies:
-      zod: 3.25.76
+      zod: 4.6.5
     transitivePeerDependencies:
       - '@faker-js/faker'
 
@@ -6318,7 +6344,7 @@ snapshots:
       string-width: 7.2.0
       strip-ansi: 7.2.0
 
-  orval@8.36.0(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(@tanstack/react-query@5.103.2(react@19.2.8))(typescript@5.9.3)(zod@3.25.76):
+  orval@8.36.0(@modelcontextprotocol/sdk@1.30.0(zod@4.6.5))(@tanstack/react-query@5.103.2(react@19.2.8))(typescript@5.9.3)(zod@4.6.5):
     dependencies:
       '@commander-js/extra-typings': 15.0.0(commander@15.0.0)
       '@orval/angular': 8.36.0
@@ -6326,14 +6352,14 @@ snapshots:
       '@orval/core': 8.36.0
       '@orval/effect': 8.36.0
       '@orval/fetch': 8.36.0
-      '@orval/hono': 8.36.0(typescript@5.9.3)(zod@3.25.76)
-      '@orval/mcp': 8.36.0(@modelcontextprotocol/sdk@1.30.0(zod@3.25.76))(zod@3.25.76)
+      '@orval/hono': 8.36.0(typescript@5.9.3)(zod@4.6.5)
+      '@orval/mcp': 8.36.0(@modelcontextprotocol/sdk@1.30.0(zod@4.6.5))(zod@4.6.5)
       '@orval/mock': 8.36.0
       '@orval/pinia-colada': 8.36.0
       '@orval/query': 8.36.0(@tanstack/react-query@5.103.2(react@19.2.8))
       '@orval/solid-start': 8.36.0
       '@orval/swr': 8.36.0
-      '@orval/zod': 8.36.0(zod@3.25.76)
+      '@orval/zod': 8.36.0(zod@4.6.5)
       '@scalar/json-magic': 0.13.5
       '@scalar/openapi-parser': 0.29.4
       '@scalar/openapi-types': 0.9.6
@@ -7201,6 +7227,11 @@ snapshots:
   zod-to-json-schema@3.25.2(zod@3.25.76):
     dependencies:
       zod: 3.25.76
+
+  zod-to-json-schema@3.25.2(zod@4.6.5):
+    dependencies:
+      zod: 4.6.5
+    optional: true
 
   zod@3.25.76: {}
 
