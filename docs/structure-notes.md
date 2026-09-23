@@ -132,19 +132,23 @@ features に置くと、`/dashboard` `/books` `/settings/profile` へのリン�
 `redirect` `revalidatePath` もヘッダーもここから取る (確定済み。規則は conventions の shared の節)。
 ドメインの slice (features) がリンクを出すときも、URL の形を書かずにこの関数を呼ぶ。`BookNoteList` の編集リンクが最初の例。
 
-### shared に出す場合の構成
+### shared 版の構成 (現状)
 
-いまの `app/layout.tsx` はヘッダーのマークアップを直接持っていて、app の節の「マークアップもロジックも書かない」から外れている。
+`app/layout.tsx` は html / body、フォント、globals.css だけを持ち、マークアップは shared に出してある
+(app の節の「マークアップもロジックも書かない」に沿う形)。
 
 ```
 app/layout.tsx                          html / body、フォント、globals.css、<AppLayout> を呼ぶだけ
 shared/layouts/AppLayout/               ヘッダー + <main> の骨格。children を受け取る。story あり
-shared/components/GlobalNav/            リンクの一覧。usePathname で現在地を強調 ("use client")。story あり
-shared/routes/routes.ts                 パス関数 (あり)。ナビの一覧もここから取る
+shared/components/GlobalNav/            リンクの一覧 (NAV_LINKS)。usePathname で現在地を強調 ("use client")。story あり
+shared/routes/routes.ts                 パス関数。ナビのリンク先もここから取る
 ```
 
+現在地の判定は `GlobalNav` の中にある。`/books` のリンクは `/books/2` のような下の階層でも現在地とし、`/` だけは完全一致にする。
+強調は `aria-current="page"` と文字色で、story の play は `aria-current` で判定を見る。
+
 `GlobalNav` の story は `parameters.nextjs.navigation.pathname` で現在地を切り替える。
-`usePathname` を使うので `.storybook/preview.tsx` の `parameters` に `nextjs: { appDirectory: true }` が要る。
+`usePathname` を使うので `.storybook/preview.tsx` の `parameters` に `nextjs: { appDirectory: true }` を入れてある。
 
 ### widgets に移す場合の構成
 
@@ -162,9 +166,8 @@ shared/components/GlobalNav/                          変えない
 
 import の向きは `app > widgets > entities > shared` の一方向で、shared の `GlobalNav` と `AppLayout` は widgets の存在を知らない。
 将来 `features/book-note` の未読件数を足すときも `GlobalHeader` が並べるだけで、`GlobalNav` は変わらない。
-静的なリンクだけの間は shared 版で始め、データが要る部品が出た時点でこの形に移す。
-
-段階 4 (`/dashboard`) と段階 5 (`/settings`) でナビのリンクが増えるので、その前に shared 版へ切っておくと差分が読みやすい。
+静的なリンクだけの間は shared 版のままにし、データが要る部品が出た時点でこの形に移す。
+段階 4 (`/dashboard`) と段階 5 (`/settings`) でナビに足すのは `GlobalNav` の `NAV_LINKS` への 1 行ずつ。
 
 ---
 

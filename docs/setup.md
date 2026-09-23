@@ -426,6 +426,36 @@ api の `current_page` が 300 になる。`/books/1/notes/999/edit` は not-fou
 
 ---
 
+## 12. ヘッダーを shared に出す
+
+段階 4 と 5 でナビのリンクが増える前に、`app/layout.tsx` が直接持っていたヘッダーのマークアップを shared に出した
+([structure-notes.md §4](structure-notes.md) の shared 版)。コードは手で書いた。
+
+| 置き場 | 置いたもの |
+|---|---|
+| `shared/components/GlobalNav/` | リンクの一覧 (`NAV_LINKS`) と現在地の強調。`usePathname` を読むので `"use client"`。story は `/books`、`/books/2` (下の階層でも現在地)、ナビに無いパスの 3 つで、`aria-current="page"` の有無を play で見る |
+| `shared/layouts/AppLayout/` | ヘッダー + `<main>` の骨格。`children` を受ける。story は `fullscreen` で、body と同じ `flex-col` の decorator に包む |
+| `app/layout.tsx` | html / body、フォント、globals.css、`<AppLayout>` を呼ぶだけになった |
+| `.storybook/preview.tsx` | `parameters.nextjs.appDirectory: true`。`next/navigation` を story で差し替えるのに要る |
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| 現在地の判定で `/` を前方一致にすると全ページで「booklog」が現在地になる | `/` だけ完全一致、それ以外は `pathname === href` か `pathname.startsWith(href + "/")`。`/books` は `/books/2` でも現在地になる |
+| ヘッダーの見た目は `AppLayout` の story でも見えるが、現在地の切り替えは `GlobalNav` の story で見る | `AppLayout` の story は骨格 (`banner` と `main` があること) だけを見る。部品ごとに関心を分ける |
+
+### 確認
+
+```bash
+pnpm --filter web test              # 54 files / 134 tests
+pnpm --filter web typecheck
+pnpm lint
+pnpm format:check
+```
+
+---
+
 ## 未実施
 
 この時点では入れていないもの。それぞれの段階で入れる。
@@ -438,4 +468,3 @@ api の `current_page` が 300 になる。`/books/1/notes/999/edit` は not-fou
 | Server Action を `apis/functions/` から `actions/` に分ける | 段階 3 で Server Action が 6 本になった。判断待ち。本数と重複の箇所は [structure-notes.md §5](structure-notes.md) |
 | メモの削除 (`DELETE /books/:bookId/notes/:noteId`) | api にはあるが画面は未実装。一覧の行にインライン操作として置くなら `BookRow` の読了トグルと同じ形 (行単位の pending / error) になる |
 | 詳細画面に進捗を出す | 進捗を更新しても詳細には現れない。出すなら `features/book-progress` の部品を 3 つ目の Suspense 境界として `BookDetailPage` に足す。段階 4 のダッシュボードで進捗を出すので、そのときに合わせて考える |
-| ヘッダーを `shared/layouts/AppLayout` に出す | 段階 4 と 5 でナビのリンクが増える前に切る ([structure-notes.md §4](structure-notes.md)) |
