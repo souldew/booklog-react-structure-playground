@@ -8,6 +8,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { BookStatusBadge } from "@/features/book/components/BookStatusBadge/BookStatusBadge";
 import type { Book, BookStatus } from "@/features/book/model";
 import type { ActionResult } from "@/shared/apis/actionResult";
+import { routes } from "@/shared/routes/routes";
 
 type Props = {
   book: Book;
@@ -33,7 +34,7 @@ export function BookRow({ book, onChangeStatus }: Props) {
   return (
     <TableRow data-pending={isPending || undefined} className="data-pending:opacity-60">
       <TableCell>
-        <Link href={`/books/${book.id}`} className="underline-offset-4 hover:underline">
+        <Link href={routes.bookDetail(book.id)} className="underline-offset-4 hover:underline">
           {book.title}
         </Link>
       </TableCell>

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 
+import { routes } from "@/shared/routes/routes";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 // グローバルナビ。画面が増えたらここにリンクを足す (docs/screens.md §7)。
-const NAV_LINKS = [{ href: "/books", label: "本" }] as const;
+const NAV_LINKS = [{ href: routes.books(), label: "本" }] as const;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -28,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <header className="border-b">
           <nav className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
-            <Link href="/" className="font-semibold">
+            <Link href={routes.home()} className="font-semibold">
               booklog
             </Link>
             {NAV_LINKS.map((link) => (

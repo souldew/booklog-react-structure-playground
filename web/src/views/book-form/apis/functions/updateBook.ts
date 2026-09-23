@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { updateBook as patchBook } from "@/generated/books/books";
 import { ApiError } from "@/shared/apis/customFetch";
 import { hasFieldErrors } from "@/shared/lib/fieldErrors";
+import { routes } from "@/shared/routes/routes";
 
 import { parseBookForm } from "../../lib/parseBookForm";
 import type { BookFormState } from "../../model";
@@ -35,7 +36,7 @@ export async function updateBook(
   }
 
   // 一覧と詳細の両方に反映する。
-  revalidatePath("/books");
-  revalidatePath(`/books/${bookId}`);
-  redirect(`/books/${bookId}`);
+  revalidatePath(routes.books());
+  revalidatePath(routes.bookDetail(bookId));
+  redirect(routes.bookDetail(bookId));
 }

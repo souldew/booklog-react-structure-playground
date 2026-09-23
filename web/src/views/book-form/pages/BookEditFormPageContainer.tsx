@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 
+import { routes } from "@/shared/routes/routes";
+
 import { BookFormContainer } from "../components/BookForm/BookFormContainer";
 import { BookFormSkeleton } from "../components/BookFormSkeleton/BookFormSkeleton";
 import { BookFormPage } from "./BookFormPage";
@@ -13,7 +15,7 @@ export function BookEditFormPageContainer({ bookId }: Props) {
   return (
     <BookFormPage
       title="本を編集"
-      backHref={`/books/${bookId}`}
+      backHref={routes.bookDetail(bookId)}
       backLabel="詳細へ"
       form={
         <Suspense fallback={<BookFormSkeleton />}>

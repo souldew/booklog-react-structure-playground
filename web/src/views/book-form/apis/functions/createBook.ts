@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { toBook } from "@/features/book/apis/mappers/toBook";
 import { createBook as postBook } from "@/generated/books/books";
 import { hasFieldErrors } from "@/shared/lib/fieldErrors";
+import { routes } from "@/shared/routes/routes";
 
 import { parseBookForm } from "../../lib/parseBookForm";
 import type { BookFormState } from "../../model";
@@ -30,6 +31,6 @@ export async function createBook(state: BookFormState, formData: FormData): Prom
   }
 
   // 一覧に新しい本を出す。redirect は throw で抜けるので try の外に置く。
-  revalidatePath("/books");
-  redirect(`/books/${createdId}`);
+  revalidatePath(routes.books());
+  redirect(routes.bookDetail(createdId));
 }

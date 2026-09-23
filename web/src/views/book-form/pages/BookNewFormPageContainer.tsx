@@ -1,3 +1,5 @@
+import { routes } from "@/shared/routes/routes";
+
 import { createBook } from "../apis/functions/createBook";
 import { BookForm } from "../components/BookForm/BookForm";
 import { EMPTY_BOOK_FORM_VALUES } from "../model";
@@ -9,7 +11,7 @@ export function BookNewFormPageContainer() {
   return (
     <BookFormPage
       title="本を追加"
-      backHref="/books"
+      backHref={routes.books()}
       backLabel="一覧へ"
       form={
         <BookForm

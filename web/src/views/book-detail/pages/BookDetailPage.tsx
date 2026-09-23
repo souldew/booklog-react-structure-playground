@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
+import { routes } from "@/shared/routes/routes";
 
 type Props = {
   bookId: string;
@@ -17,7 +18,7 @@ export function BookDetailPage({ bookId, info, notes }: Props) {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <Link href="/books" className="text-sm text-muted-foreground hover:underline">
+          <Link href={routes.books()} className="text-sm text-muted-foreground hover:underline">
             ← 一覧へ
           </Link>
           <h1 className="text-xl font-semibold">本の詳細</h1>
@@ -26,12 +27,12 @@ export function BookDetailPage({ bookId, info, notes }: Props) {
             buttonVariants で見た目だけ借りて素の Link を描く */}
         <div className="flex gap-2">
           <Link
-            href={`/books/${bookId}/progress`}
+            href={routes.bookProgress(bookId)}
             className={buttonVariants({ variant: "outline" })}
           >
             進捗を更新
           </Link>
-          <Link href={`/books/${bookId}/edit`} className={buttonVariants()}>
+          <Link href={routes.bookEdit(bookId)} className={buttonVariants()}>
             編集
           </Link>
         </div>
@@ -43,7 +44,7 @@ export function BookDetailPage({ bookId, info, notes }: Props) {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">メモ</h2>
           <Link
-            href={`/books/${bookId}/notes`}
+            href={routes.bookNotes(bookId)}
             className="text-sm text-muted-foreground hover:underline"
           >
             メモをすべて見る
