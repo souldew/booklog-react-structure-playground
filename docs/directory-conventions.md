@@ -458,4 +458,4 @@ Skeleton からの切り替わりは `parameters.slots` にスロット名と Sk
 ([tech-stack.md §7](tech-stack.md))。Skeleton と中身を並べて比べるだけの story は書かない。切り替わりで見えるため。
 
 Skeleton を単体で見るのは、親の `Loading` story のほうが役割が近い。
-Page の story はどのパネルが先に解決するかの組み合わせを見る場所で、Skeleton 自体の作りを見る場所ではない。
+Page の story は取得前と取得後がどう見えるかを並べる場所で、Skeleton 自体の作りを見る場所ではない。

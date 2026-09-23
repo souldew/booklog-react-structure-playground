@@ -12,9 +12,11 @@ import { RecentBookNoteList } from "../components/RecentBookNoteList/RecentBookN
 import { RecentBookNoteListSkeleton } from "../components/RecentBookNoteList/RecentBookNoteListSkeleton";
 import { READING_BOOK_FIXTURES } from "../fixtures/readingBooks";
 import { DashboardPage } from "./DashboardPage";
+import { DashboardPageSkeleton } from "./DashboardPageSkeleton";
 
 // スロットには取得後の Presentational や Skeleton を直接渡す。Container と Suspense は story では使わない。
-// 3 つのパネルが別々に解決する様子は、parameters.slots とツールバーの「スロットの遅延」で見る。
+// Skeleton から中身への切り替わりは、parameters.slots とツールバーの「スロットの遅延」で見る。
+// 取得は 1 回なので 3 つのパネルは同時に切り替わる。
 const meta = {
   component: DashboardPage,
   args: {
@@ -54,28 +56,10 @@ export const Default: Story = {
   },
 };
 
-// 3 つとも解決していない状態。
+// 取得を待っている状態。app/dashboard/loading.tsx が出す fallback そのもの。
+// パネル単位の境界が無いので、一部だけ解決した姿は実際には現れない。
 export const Loading: Story = {
-  args: {
-    reading: <ReadingBookListSkeleton />,
-    notes: <RecentBookNoteListSkeleton />,
-    stats: <BookReadingStatTableSkeleton />,
-  },
-};
-
-// 統計 (300ms) だけ先に届いた状態。実際の api の遅延だとまずこの姿になる。
-export const StatsOnly: Story = {
-  args: {
-    reading: <ReadingBookListSkeleton />,
-    notes: <RecentBookNoteListSkeleton />,
-  },
-};
-
-// メモ (1500ms) だけがまだの状態。
-export const NotesLoading: Story = {
-  args: {
-    notes: <RecentBookNoteListSkeleton />,
-  },
+  render: () => <DashboardPageSkeleton />,
 };
 
 // 全部空。登録直後のアプリの姿。

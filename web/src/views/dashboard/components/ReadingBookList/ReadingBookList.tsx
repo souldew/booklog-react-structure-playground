@@ -10,7 +10,7 @@ type Props = {
   items: ReadingBook[];
 };
 
-// 読書中の本と読了率。本と進捗の 2 ドメインの値を並べるが、合成したのは Container で、ここは描くだけ。
+// 読書中の本と読了率。本と進捗の 2 ドメインの値を並べるが、組にしたのは api で、ここは描くだけ。
 export function ReadingBookList({ items }: Props) {
   if (items.length === 0) {
     return <p className="text-sm text-muted-foreground">読書中の本はありません</p>;

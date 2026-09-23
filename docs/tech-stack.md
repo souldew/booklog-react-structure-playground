@@ -103,8 +103,9 @@ API スキーマの変更を mapper で止めるため。Container まで生成�
 | 決めたこと | 内容 |
 |---|---|
 | 取得 | `apis/functions/` の `fetchXxx` を Server Component の Container から `await` する。`apis/hooks/` は作らない |
-| 境界 | 画面の Container が `<Suspense fallback={<XxxSkeleton />}>` を置き、取得する Container をスロットに注入する。境界の位置は画面の都合なので、取得する側ではなく置く側が決める |
-| 並列 | 同じパネルの中で複数取るときは `Promise.all`。パネルどうしは Suspense が分かれているので、遅いパネルが速いパネルを待たせない |
+| 境界 | 画面の Container が `<Suspense fallback={<XxxSkeleton />}>` を置き、取得する Container をスロットに注入する。境界の位置は画面の都合なので、取得する側ではなく置く側が決める。画面ぶんを 1 回で取る `/dashboard` だけ、境界も画面単位で `loading.tsx` に置く |
+| 並列 | 同じ境界の中で複数取るときは `Promise.all`。境界が分かれていれば、遅いほうが速いほうを待たせない |
+| 取得の単位 | **エンドポイントの粒度が境界の粒度を決める。** 1 画面を 1 回で取るなら境界も 1 つで、そこに Skeleton を出す。細かく分けるほど早く出せる部分が増えるが、順に現れてレイアウトが動く (ポップコーン UI) |
 | エラー | `apis/` が `ApiError` を throw し、ルートの `error.tsx` が受ける。`app/books/error.tsx` と `app/dashboard/error.tsx` にあり、`reset` で再試行する |
 | 更新後 | Server Action の `revalidatePath` で、その更新が映る画面を再検証する。呼び忘れると古いまま残る ([backend.md §7](backend.md)) |
 

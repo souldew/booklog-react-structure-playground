@@ -149,7 +149,7 @@ Book と 1:N。コレクションにする根拠。
 
 | 画面 | 境界の外 | 境界の内 |
 |---|---|---|
-| `/dashboard` | カードの枠・見出し | 各パネルの中身（**パネルごとに独立**） |
+| `/dashboard` | レイアウト（ナビ） | 画面全体（**境界は画面単位**。`loading.tsx`） |
 | `/books` | ツールバー・絞り込み欄・テーブルヘッダー | 行 |
 | `/books/[bookId]` | 本の見出し | 書誌情報 / メモ一覧（**別々の境界**） |
 | `/books/new` | 全部 | **なし** |
@@ -166,16 +166,22 @@ Book と 1:N。コレクションにする根拠。
 `book-form` `book-note-form` が `pages/` に New と Edit の 2 つの Container を持つのと並べると、
 **複数形と単数形の差が `pages/` のファイル数に出る。** これが段階 3 の主眼。
 
-`/dashboard` はパネルごとに境界を分ける。速いパネルから順に出るので、
-境界の粒度の効果が一番見える画面になる。パネルは「読書中の本」(本 + 進捗の合成、api は 1200ms + 200ms)、
-「最近のメモ」(1500ms)、「月別の記録」(300ms) の 3 つで、統計 → 本 → メモの順に出る。
+`/dashboard` だけ境界が画面単位で、`Suspense` を置くのも `PageContainer` ではなく
+Next の規約ファイル `web/app/dashboard/loading.tsx` になる。取得が `GET /dashboard` の 1 回なので、
+境界をパネルごとに分けても 3 枚が同時に解決し、分ける意味が無い ([backend.md §4](backend.md))。
 
-取得は他の画面と同じく Server Component で行う ([tech-stack.md §4](tech-stack.md))。骨格と 3 つの Skeleton が先に届き、
-取得が終わったパネルから順にストリーミングで中身に差し替わる。`DashboardPageContainer` が `Suspense` を 3 つ置き、
-取得する Container をスロットに注入する形は `BookListPageContainer` と同じ。
+| | 他の画面 | `/dashboard` |
+|---|---|---|
+| 境界を置く場所 | `PageContainer` の `Suspense` | `loading.tsx` |
+| fallback | スロットごとの Skeleton | `DashboardPageSkeleton` (3 つの Skeleton を `DashboardPage` に差したもの) |
+| 取得する Container | スロットに注入 | `DashboardPageContainer` が 1 回取り、スロットに結果を配る |
 
-失敗の受け口は `web/app/dashboard/error.tsx` で、**境界はパネル単位ではなく画面単位**になる。
-1 枚でも失敗すれば画面全体がエラー表示に置き換わる。
+取得は他の画面と同じく Server Component で行う ([tech-stack.md §4](tech-stack.md))。
+レイアウトと画面全体の Skeleton が先に届き、取得が終わるとストリーミングで中身に差し替わる。
+枠と見出しは Skeleton 側の `DashboardPage` が描くので、切り替わってもレイアウトは動かない。
+
+失敗の受け口は `web/app/dashboard/error.tsx` で、**成功も失敗も同じ画面単位の粒度**になる。
+1 か所でも失敗すれば画面全体がエラー表示に置き換わる。
 
 ---
 

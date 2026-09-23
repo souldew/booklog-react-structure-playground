@@ -1,12 +1,11 @@
 import { createMiddleware } from "hono/factory";
 
 // ローディング表示を目視できるように、エンドポイントごとに人工的な遅延を入れる。
-// ダッシュボードのパネルが別々のタイミングで出るよう、意図的にばらしてある。
+// /dashboard は 1 画面ぶんをまとめて返すので、一番重い /books に合わせて待ちの長さを見せる。
 const rules: [RegExp, number][] = [
   [/^\/books$/, 1200],
   [/^\/books\/[^/]+$/, 400],
-  [/^\/stats\/monthly$/, 300],
-  [/^\/notes\/recent$/, 1500],
+  [/^\/dashboard$/, 1200],
 ];
 const DEFAULT_DELAY_MS = 200;
 

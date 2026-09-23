@@ -4,11 +4,11 @@ import type { ReactNode } from "react";
 import { routes } from "@/shared/routes/routes";
 
 type Props = {
-  /** 読書中の本。Container が Suspense で包んで注入する */
+  /** 読書中の本。取得後の Presentational か Skeleton を Container が注入する */
   reading: ReactNode;
-  /** 最近のメモ。reading とは別の境界 */
+  /** 最近のメモ */
   notes: ReactNode;
-  /** 月別の記録。さらに別の境界 */
+  /** 月別の記録 */
   stats: ReactNode;
 };
 
@@ -33,7 +33,8 @@ function DashboardPanel({ title, action, className, children }: PanelProps) {
 }
 
 // 本・メモ・統計の 3 ドメインを横断する画面。CRUD に対応しないので view 名に suffix が無い (docs/screens.md §3)。
-// パネルの枠と見出しは境界の外、中身はパネルごとに別々の境界。api の遅延が違うので、速いパネルから順に出る。
+// スロットを 3 つに分けてあるのは、取得後の中身と Skeleton を同じ枠に差せるようにするため。
+// 中身の型はスロットの向こうにあるので、この画面はドメインの型を知らない。
 export function DashboardPage({ reading, notes, stats }: Props) {
   return (
     <div className="space-y-6">

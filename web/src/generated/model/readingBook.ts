@@ -5,12 +5,10 @@
  * 読書管理デモの API。web からは Server Component / Server Action / ブラウザの 3 経路で呼ばれる。
  * OpenAPI spec version: 0.1.0
  */
+import type { Book } from './book';
+import type { BookProgress } from './bookProgress';
 
-export type ListRecentNotesParams = {
-/**
- * 件数。既定は 5
- * @minimum 1
- * @maximum 20
- */
-limit?: number;
-};
+export interface ReadingBook {
+  book: Book;
+  progress: BookProgress;
+}

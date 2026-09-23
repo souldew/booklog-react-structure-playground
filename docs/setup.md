@@ -671,13 +671,73 @@ API_DELAY=0 pnpm dev
 
 ---
 
+## 17. `/dashboard` をページ単位の一括取得にする
+
+パネルごとに 3 本のエンドポイントを叩く形から、`GET /dashboard` 1 本にまとめた。
+決めごとは [backend.md §4](backend.md)、境界の位置は [screens.md §5](screens.md)。
+
+きっかけは「読書中の本」パネルの N+1。本の一覧を取ってから 1 冊ごとに
+`/books/:bookId/progress` を叩いていて、まとめて取る口が api に無かった。
+進捗だけ一括取得を足す案もあったが、**ポップコーン UI を避けることも同時に狙う**なら
+パネルごとに分けておく理由が無くなるので、画面 1 枚を 1 回で取る形にした。
+
+| 置き場 | 消したもの |
+|---|---|
+| `api/src/routes/` | `stats.ts` (`/stats/monthly`)、`notes.ts` (`/notes/recent`)。どちらもダッシュボード専用だった |
+| `entities/book-reading-stat/apis/functions/` `entities/book-note/apis/functions/` | `fetchBookReadingStats`、`fetchRecentBookNotes` とそのテスト。前者はディレクトリごと空になった (mapper は残る) |
+| `views/dashboard/components/*/` | 3 つの `XxxContainer`。取得は `pages/` の 1 か所になった |
+| `DashboardPage.stories.tsx` | `StatsOnly` `NotesLoading`。一部のパネルだけ解決した姿は起きなくなった |
+
+| 置き場 | 置いたもの |
+|---|---|
+| `api/src/routes/dashboard.ts` | `GET /dashboard`。読書中の本は `books JOIN book_progress` の 1 クエリで組にする。メモと統計のクエリは消した 2 ファイルから移した |
+| `api/src/schemas.ts` | `ReadingBookSchema` (本と進捗の組)、`DashboardSchema` (パネル 3 つぶん) |
+| `views/dashboard/model.ts` | `Dashboard` 型。`ReadingBook` はそのまま |
+| `views/dashboard/apis/` | `mappers/toReadingBook` `mappers/toDashboard`、`functions/fetchDashboard`。入れ子の変換は entities の mapper に任せる |
+| `views/dashboard/pages/DashboardPageSkeleton` | `DashboardPage` に 3 つの Skeleton を差したもの。画面全体の fallback |
+| `web/app/dashboard/loading.tsx` | 画面単位の `Suspense` 境界。`error.tsx` と同じ粒度になった |
+| `api/src/middleware/delay.ts` | `/dashboard` に 1200ms。`/stats/monthly` (300ms) `/notes/recent` (1500ms) の行は消えた |
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| 境界を置く場所が `PageContainer` から `loading.tsx` に移った | 取得が 1 回だと `PageContainer` が `await` してしまうので、`Suspense` はその外側にしか置けない。ルートセグメント単位の境界は Next の規約ファイルが持つ形が素直で、`error.tsx` と粒度も揃う |
+| `DashboardPage` のスロット 3 つはそのまま残した | 境界は 1 つだが、スロットがあると「取得後の Presentational」と「Skeleton」を同じ枠に差し替えられる。`DashboardPageSkeleton` は `DashboardPage` にスロットで Skeleton を差しただけで、枠と見出しの実装は 1 か所のまま |
+| `entities/book-reading-stat` から `apis/functions/` が消えた | 取得は画面の型に組み直す `views/dashboard` 側に移り、entity に残るのは型・mapper・`formatMonth`・fixtures。**entity は取得関数を持たなくても成立する**。mapper は `toDashboard` から呼ばれる |
+| 生成型の `Book` が `ReadingBook` の中に入れ子になった | `toReadingBook` は `toBook` と `toBookProgress` を呼ぶだけになり、変換の実体は entity 側に残る。API のスキーマが変わったとき、直すのは相変わらず entity の mapper |
+| `SELECT b.*` に進捗の列を混ぜても外に漏れない | 1 クエリで取った行をそのまま `book` に渡しているが、`DashboardSchema.parse` が入れ子の未知キーを落とす。`current_page` が `book` 側に出ることはない |
+| ポップコーン UI と待ち時間はトレードオフ | 統計 (300ms) が先に出ていたぶん、画面に何か出るまでの時間は 300ms → 1200ms に伸びた。代わりにレイアウトが 3 回動くことは無くなった。遅延の表 ([backend.md §5](backend.md)) をそのまま見れば差が分かる |
+
+### 確認
+
+```bash
+pnpm --filter api typecheck
+pnpm --filter web test              # 65 files / 155 tests
+pnpm --filter web typecheck
+pnpm lint
+pnpm format:check
+pnpm dev
+```
+
+```bash
+curl -s localhost:8787/dashboard | jq 'keys'
+# ["monthly_stats","reading_books","recent_notes"]
+curl -s -o /dev/null -w "%{http_code}\n" localhost:8787/stats/monthly   # 404
+```
+
+`/dashboard` を開くと、まず画面全体の Skeleton (枠と見出しは出たまま) が届き、
+1.2 秒後に 3 パネルが同時に中身へ変わる。SSR の HTML にも 3 パネルとも中身が入る。
+
+---
+
 ## 未実施
 
 この時点では入れていないもの。それぞれの段階で入れる。
 
 | | 入れる段階 |
 |---|---|
-| `/settings/*` のエンドポイント | 段階 5。`/stats/monthly` `/notes/recent` は api に足してある |
+| `/settings/*` のエンドポイント | 段階 5。ダッシュボードが使う `/dashboard` は api に足してある |
 | BFF (`web/app/api/` の Route Handler) を挟む経路 | [backend.md §7](backend.md) の 4 つ目。ブラウザから取る画面が無くなったので、クライアント取得を入れ直す判断とセット ([tech-stack.md §4](tech-stack.md)) |
 | `api` の Vitest (`app.request()`、DB の分離、`API_DELAY=0`) | 未定。web 側のスタブは「web はこう送る」しか担保しないので、契約の反対側として要る |
 | フォームライブラリ Conform (`@conform-to/react` + `@conform-to/zod`) | 段階 3 でフォームが 3 つになった。入れるかどうかは判断待ち。現状の残り定型と判断材料は [tech-stack.md §5](tech-stack.md) |

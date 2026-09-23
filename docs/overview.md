@@ -35,7 +35,7 @@ React アプリの **URL 設計と画面の分け方**を、動くアプリで�
 | 一覧からの更新は `edit` ではない | `/books` の読了トグル |
 | 詳細の中にネストした一覧を置く | `/books/[bookId]` |
 | セクション寿命の Provider | `/books` の絞り込み条件 |
-| Suspense 境界の粒度 | `/dashboard` のパネル |
+| Suspense 境界の粒度と、取得の単位との関係 | `/dashboard` |
 
 画面の一覧と、それぞれの view への写像は [screens.md](screens.md) にある。
 API と DB の構成は [backend.md](backend.md) にある。
@@ -55,7 +55,7 @@ API と DB の構成は [backend.md](backend.md) にある。
 | 1 | `/books` `/books/[bookId]` | list / detail、絞り込み Provider、インライン更新 |
 | 2 | `/books/new` `/books/[bookId]/edit` | form の共有と、組み立て層に出る差 |
 | 3 | `/books/[bookId]/notes` `/books/[bookId]/progress` | 複数形と単数形の対比 |
-| 4 | `/dashboard` | パネルごとの境界、複数ドメインの横断、取得と型の `entities/` への集約 |
+| 4 | `/dashboard` | 画面単位の境界、複数ドメインの横断、取得と型の `entities/` への集約 |
 | 5 | `/settings/*` | タブ分割、レイアウトの責務 |
 
 段階 2 が主目的。段階 1 はその前提を整えるためにある。

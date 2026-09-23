@@ -82,7 +82,7 @@ export const BookProgressUpdateSchema = z
   })
   .openapi("BookProgressUpdate");
 
-// ダッシュボードの統計。月ごとに、登録した本の冊数と合計ページ数、書いたメモの件数。
+// 月別の統計。月ごとに、登録した本の冊数と合計ページ数、書いたメモの件数。
 export const BookReadingStatSchema = z
   .object({
     month: z.string().openapi({ description: "YYYY-MM", example: "2026-09" }),
@@ -92,10 +92,27 @@ export const BookReadingStatSchema = z
   })
   .openapi("BookReadingStat");
 
-// ダッシュボードの「最近のメモ」。本を横断するので、本のタイトルを載せて返す。
+// 本を横断したメモ。どの本のメモか分からないと並べられないので、本のタイトルを載せて返す。
 export const RecentBookNoteSchema = BookNoteSchema.extend({
   book_title: z.string(),
 }).openapi("RecentBookNote");
+
+// 読書中の本と、その進捗の組。進捗は本の作成時に必ず 1 行作られるので、片方だけ欠けることはない。
+export const ReadingBookSchema = z
+  .object({
+    book: BookSchema,
+    progress: BookProgressSchema,
+  })
+  .openapi("ReadingBook");
+
+// ダッシュボード 1 画面ぶんのデータ。パネルの数だけフィールドを持つ。
+export const DashboardSchema = z
+  .object({
+    reading_books: z.array(ReadingBookSchema),
+    recent_notes: z.array(RecentBookNoteSchema),
+    monthly_stats: z.array(BookReadingStatSchema),
+  })
+  .openapi("Dashboard");
 
 export const BookIdParamSchema = z.object({
   bookId: z.string().openapi({ param: { name: "bookId", in: "path" }, example: "1" }),

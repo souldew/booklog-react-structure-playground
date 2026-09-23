@@ -6,8 +6,7 @@ import { fail } from "./middleware/fail.ts";
 import { bookNotes } from "./routes/bookNotes.ts";
 import { bookProgress } from "./routes/bookProgress.ts";
 import { books } from "./routes/books.ts";
-import { notes } from "./routes/notes.ts";
-import { stats } from "./routes/stats.ts";
+import { dashboard } from "./routes/dashboard.ts";
 
 export const openApiInfo = {
   openapi: "3.1.0" as const,
@@ -31,7 +30,6 @@ app.use(delay);
 app.route("/", books);
 app.route("/", bookNotes);
 app.route("/", bookProgress);
-app.route("/", stats);
-app.route("/", notes);
+app.route("/", dashboard);
 
 app.doc31("/doc", openApiInfo);
