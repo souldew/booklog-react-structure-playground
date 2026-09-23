@@ -7,7 +7,10 @@ import { routes } from "@/shared/routes/routes";
 
 // グローバルナビのリンク一覧。画面が増えたらここに足す (docs/screens.md §7)。
 // パスは文字列で書かず shared/routes から取る。
-const NAV_LINKS = [{ href: routes.books(), label: "本" }] as const;
+const NAV_LINKS = [
+  { href: routes.dashboard(), label: "ダッシュボード" },
+  { href: routes.books(), label: "本" },
+] as const;
 
 // 現在地の判定。/books のリンクは /books/1 のような下の階層でも現在地とみなす。
 // ただし / (ルート) は完全一致だけ。前方一致にすると全ページで現在地になる。

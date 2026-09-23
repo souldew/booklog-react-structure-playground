@@ -4,6 +4,7 @@
 // キー名は docs/screens.md の view 名に対応させる。
 export const routes = {
   home: () => "/",
+  dashboard: () => "/dashboard",
   books: () => "/books",
   bookNew: () => "/books/new",
   bookDetail: (bookId: string) => `/books/${bookId}`,
