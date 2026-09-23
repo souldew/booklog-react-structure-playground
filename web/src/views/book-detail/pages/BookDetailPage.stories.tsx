@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, within } from "storybook/test";
 
+import { BookNoteList } from "@/features/book-note/components/BookNoteList/BookNoteList";
+import { BookNoteListSkeleton } from "@/features/book-note/components/BookNoteListSkeleton/BookNoteListSkeleton";
 import { BOOK_NOTE_FIXTURES } from "@/features/book-note/fixtures/bookNotes";
 import { BOOK_FIXTURES } from "@/features/book/fixtures/books";
 import { expectStable } from "@/shared/fixtures/expectStable";
 
 import { BookInfo } from "../components/BookInfo/BookInfo";
 import { BookInfoSkeleton } from "../components/BookInfoSkeleton/BookInfoSkeleton";
-import { BookNoteList } from "../components/BookNoteList/BookNoteList";
-import { BookNoteListSkeleton } from "../components/BookNoteListSkeleton/BookNoteListSkeleton";
 import { BookDetailPage } from "./BookDetailPage";
 
 // スロットには取得後の Presentational や Skeleton を直接渡す。Container と Suspense は story では使わない。
