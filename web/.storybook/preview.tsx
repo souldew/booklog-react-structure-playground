@@ -7,6 +7,8 @@ import "../src/app/globals.css";
 
 const preview: Preview = {
   parameters: {
+    // next/navigation (usePathname など) を story で差し替えるのに要る。現在地は各 story の nextjs.navigation.pathname で指定する
+    nextjs: { appDirectory: true },
     controls: {
       matchers: {
         color: /(background|color)$/i,
