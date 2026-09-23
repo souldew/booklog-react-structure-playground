@@ -8,7 +8,7 @@ type StubbedResponse = {
 
 export type RecordedRequest = {
   method: string;
-  /** base URL を除いたパス */
+  /** base URL を除いたパス。クエリがあれば含む */
   path: string;
   /** JSON の body。無ければ undefined */
   body: unknown;
@@ -25,7 +25,7 @@ export function stubFetch(responses: StubbedResponse[]): RecordedRequest[] {
     const url = input instanceof Request ? input.url : String(input);
     requests.push({
       method: init?.method ?? "GET",
-      path: new URL(url).pathname,
+      path: new URL(url).pathname + new URL(url).search,
       body: typeof init?.body === "string" ? JSON.parse(init.body) : undefined,
     });
 

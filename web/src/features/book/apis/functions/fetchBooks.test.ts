@@ -36,4 +36,13 @@ describe("fetchBooks", () => {
       expect.objectContaining({ id: "2", status: "onHold" }),
     ]);
   });
+
+  it("状態で絞るときは、ドメインの onHold を api の on_hold にしてクエリに載せる", async () => {
+    const requests = stubFetch([{ status: 200, body: [responses[1]] }]);
+
+    const books = await fetchBooks({ status: "onHold" });
+
+    expect(requests[0]?.path).toBe("/books?status=on_hold");
+    expect(books).toEqual([expect.objectContaining({ id: "2", status: "onHold" })]);
+  });
 });
