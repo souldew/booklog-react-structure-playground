@@ -1,6 +1,6 @@
 import type { BookProgress } from "../model";
 
-// story とテストで使う BookProgress。bookId は features/book/fixtures の reading (id: "2"、420 ページ) に合わせる。
+// story とテストで使う BookProgress。bookId は entities/book/fixtures の reading (id: "2"、420 ページ) に合わせる。
 export const BOOK_PROGRESS_FIXTURE: BookProgress = {
   bookId: "2",
   currentPage: 120,

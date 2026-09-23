@@ -1,7 +1,9 @@
 # React アプリのディレクトリ規約
 
-Feature-Sliced Design (FSD) をベースに、業務ドメインのレベルで構造を切れるようにしたパターン。
-フォルダ構成は FSD と同じになるが、中身の定義を業務ドメインに置くため、各層の意味は少しずつ異なる。
+Feature-Sliced Design (FSD) をベースにしたパターン。層の並びと意味は FSD に揃える
+(entities = 業務の実体、features = ユーザーの操作、widgets = 合成、views = 画面)。
+FSD と違う点は、`pages` を `views` と呼ぶこと、ルーターの規約ディレクトリを app 層と分けること、
+slice の中のカテゴリ名、`index.ts` を置かないこと、entities 同士の import に `@x` 記法を使わないこと。
 
 ## 前提
 
@@ -26,24 +28,25 @@ web/app (ルーターの規約) > src/app (FSD の app 層) > views > widgets > 
 `web/app` はルーターの規約ファイルだけを置く場所で、FSD の層ではない。`src/app` を呼ぶ側であり、`src/app` から `web/app` を
 import することは無い。以下で単に `app` と書くときは FSD の app 層 (`src/app`) を指す。
 
-同じディレクトリ内のトップの兄弟同士では import しない。
-たとえば `features/user` と `features/book` があるとき、user 側で book を import しない。
-両方が要るものは、両方を import できる上の層 (views や widgets) に置く。
-entities だけは例外で、兄弟同士の import を許容する (後述)。
+同じ層の slice 同士では import しない。
+たとえば `features/book-filter` と `features/book-status-toggle` があるとき、片方がもう片方を import しない。
+両方が要るものは、両方を import できる上の層 (widgets、views) に置く。
+entities だけは例外で、兄弟同士の import を許容する (`entities/book-note` が `entities/book` の型を使う、など)。
+FSD は entities 同士の import を `@x` 記法 (公開面の限定) で許すが、記法の管理コストのほうが大きいので、記法は使わず素直に import する。
 
 | 層 | 置くもの |
 |---|---|
 | `web/app/` (ルーターの規約) | `page.tsx` `layout.tsx` `error.tsx` などの規約ファイル。結線だけで、マークアップもロジックも書かない |
 | `app/` (`src/app/`) | アプリ全体を組み立てるもの。画面をまたぐ枠 (`layouts/`)、グローバル CSS (`styles/`)、アプリ全体の Provider の合成 (`providers/`) |
 | `views/{domain}-{detail}-{suffix}/` | 1 画面。URL に対応する |
-| `widgets/{name}/` | 複数のドメインを合成するもの。基本は使わない |
-| `features/{domain}/` | 業務ドメイン単位。同じドメインの複数の view で使うもの |
-| `entities/{name}/` | 複数のドメインで共通して使われ、それ自体に名前があるもの |
+| `widgets/{name}/` | 複数の entities を合成した UI ブロック。基本は使わない |
+| `features/{domain}-{action}/` | ユーザーの操作 (動詞)。1 つの view に閉じないもの。複数の entities を import してよい |
+| `entities/{domain}/` | 業務の実体 (名詞)。型、その実体だけを扱う通信、その実体の表示 |
 | `shared/` | 業務ドメインを持たない部品 |
 | `components/ui/` | shadcn CLI が生成したコード |
 
 必須なのは `web/app/` と `views/` だけ。他の層は該当物が出るまで作らない (`src/app/` も segment ごとに同じ)。
-画面が数枚のうちは views だけで済み、共有が出た時点で features や shared を足す。
+画面が数枚のうちは views だけで済み、共有が出た時点で entities や shared を足す。
 
 ---
 
@@ -64,7 +67,7 @@ FSD の app 層は「アプリを動かすためのものすべて。ルーテ�
 規約ディレクトリを外に出すほうを採っている ([structure-notes.md §6](structure-notes.md))。
 
 **app 層に入らないもの** の見分け方は「部品か、部品を組み立てる側か」。Button や `FormField` は全画面で使うが部品なので shared。
-`BookFilterProvider` はドメインの状態でセクション寿命なので features に定義し、`web/app/books/layout.tsx` でマウントするだけ。
+`BookFilterProvider` は「絞り込む」操作の状態でセクション寿命なので `features/book-filter` に定義し、`web/app/books/layout.tsx` でマウントするだけ。
 `routes.ts` (パス関数) はルーティングの設定ではなく URL を組む部品なので shared。
 
 `web/app/` からは `<XxxPageContainer />` を 1 行呼ぶだけにし、URL パラメータはここで解決して素の値を渡す。
@@ -110,7 +113,7 @@ URL が `/course/11/courseLesson/3` であっても、セグメントを連結�
 view 名は `course-lesson-detail` にする。URL の語を短くしているだけで、ドメインの名前が変わるわけではない。
 
 new と edit は最初から同じコンポーネントを使い回す可能性が高いので、同じ view の中で完結させる。
-分けてしまうと「フォーム」という大きな単位が features に流れてしまう。
+分けてしまうと、2 つの view で共有するために「フォーム」という大きな単位を view の外へ出すことになる。
 大きく異なるようになったら、その時点でディレクトリを切ればよい。
 
 `pages/` には `XxxPage` `XxxPageContainer` と story を置く。
@@ -118,7 +121,7 @@ new と edit を 1 つの view で受ける場合は `UserNewPageContainer` `Use
 Container を分け、`pages/` にフラットに並べる。
 
 `layouts/` の置き場は他のコンポーネントと同じ基準で決める。
-その view でしか使わないなら views、同じドメインの複数の view で使うなら features、ドメインを持たないなら shared。
+その view でしか使わないなら views、同じ実体の複数の view で使うなら entities、ドメインを持たないなら shared。
 ただし **画面をまたいで残る枠** (ヘッダー + `<main>` のように、URL が変わっても再マウントされず Page の外側にあるもの) は
 どの Page にも属さないので app 層 (`src/app/layouts/`)。Page が自分の中身として描く枠状の部品 (`FormPageLayout` のように
 `title` や `backHref` を Page から受けるもの) は「複数の画面で使う部品」であって枠ではないので、shared に置く。
@@ -128,16 +131,16 @@ Container を分け、`pages/` にフラットに並べる。
 
 ### view は複数のドメインを知ってよい
 
-**画面はドメインが出会う場所で、view はその合成の最上位。** `views/book-detail` が `features/book` (書誌情報) と
-`features/book-note` (メモ一覧) の両方を import するのは設計どおりで、「両方が要るものは、両方を import できる
+**画面はドメインが出会う場所で、view はその合成の最上位。** `views/book-detail` が `entities/book` (書誌情報) と
+`entities/book-note` (メモ一覧) の両方を import するのは設計どおりで、「両方が要るものは、両方を import できる
 上の層に置く」という §1 の規則の、上の層が view にあたる。
 
 | 事実 | 意味 |
 |---|---|
 | view 名の `{domain}` は画面の主題 | `book-detail` の `book` は「主役は本」という意味で、知ってよいドメインを縛るものではない。主役以外のドメインを並べるのは普通で、`dashboard` は本・メモ・統計を横断する |
-| features 同士は import しない | `features/book` は `features/book-note` を知らず、逆も知らない。合成は view でだけ起きる |
-| 業務上の入れ子はコードでは兄弟 | Book と BookNote は 1:N だが、`features/book/book-note/` とは切らず `features/book-note/` として横に並べる。親子関係は `bookId: string` と URL (`/books/[bookId]/notes`) で表し、Book の型は `notes` を持たない |
-| features の `{domain}` と view の `{domain}` の対応 | 命名の指針であって import の条件ではない。view はどの features でも import できる |
+| entities 同士の import は許容するが、いまは使っていない | `entities/book` と `entities/book-note` は互いを import していない。書誌情報とメモ一覧を並べる合成は view で起きる |
+| 業務上の入れ子はコードでは兄弟 | Book と BookNote は 1:N だが、`entities/book/book-note/` とは切らず `entities/book-note/` として横に並べる。親子関係は `bookId: string` と URL (`/books/[bookId]/notes`) で表し、Book の型は `notes` を持たない |
+| entities の `{domain}` と view の `{domain}` の対応 | 命名の指針であって import の条件ではない。view はどの entities でも import できる |
 
 詳細画面に書誌情報とメモ一覧が並ぶのは、Book がメモを持っているからではなく、`book-detail` という画面が
 両方を置くと決めたから ([screens.md §5](screens.md))。その決定を持つのが view の Container で、
@@ -154,33 +157,46 @@ Container を分け、`pages/` にフラットに並べる。
 ### widgets
 
 基本的には使わない層で、使わずに済むようにする。
-Header に entities の user 情報を載せるなど、複数のドメインを合成する必要が出たときだけここに定義する。
-静的なルートへのリンクだけで済むなら shared で足りる。
+ヘッダーに `entities/user` の情報を載せるなど、複数の entities を合成した **UI ブロック** が複数の画面で要るときだけここに定義する。
+静的なルートへのリンクだけで済むなら shared で足りる。操作 (動詞) の合成は widgets ではなく features。
 
 ### features
 
-業務ドメイン単位で区切り、`features/{domain}` にまとめる。
-views の list と detail で同じものを使う、といった場合に置く
-(`BookNoteList` は `book-detail` と `book-note-list` の両方で使うので `features/book-note/components/` にある)。
-view ごとに違う部分 (一覧だけが出す編集リンクなど) は `showEditLink` のような props で切り替える。
-リンク先の URL は文字列で組まず `shared/routes/` の関数から取る (shared の節)。
-`{domain}` は views のフォルダ名の `{domain}` と対応させるのが原則。
-これは命名の指針で、import の条件ではない。view はどの features でも import できる (views の節を参照)。
+ユーザーの操作 (動詞) を 1 つの slice にまとめる層。操作の UI・状態・ロジック・その操作だけが使う通信を一緒に置く
+(`features/book-filter` は入力欄 `BookFilterField`、状態 `BookFilterProvider`、`filterBooks` を持つ)。
+複数の entities を import してよいので、本と進捗をまとめて更新するようなユースケースの置き場もここになる。
 
-`features/{domain}` の下に `{sub}` は切らない。本当に大きくなったら考えるが、原則は無いはず。
+**1 つの view に閉じる操作は views に置き、features には出さない。** `createBook` のフォームと Server Action が
+`views/book-form` にあるのはそのため。features に出すのは次のどちらか。
 
-何を置くかは他のカテゴリと同じ基準に従う。そのドメインだけで使うなら features、
-複数のドメインで共通なら entities。`apis/` も同じ。
+- 2 つ以上の view から使う操作
+- view より寿命が長い状態を持つ操作。絞り込み条件は `web/app/books/layout.tsx` にマウントされ、詳細をまたいで残る
+
+slice 名は `{domain}-{action}`。`{domain}` は entities の slice 名 (`book` `book-note`) に合わせ、`{action}` は名詞化した動詞
+(`filter` `status-toggle`)。フラットに並べるとドメイン順に揃う。複数の entities をまたぐ操作は主役のドメインを頭に付ける。
+`features/{name}` の下に `{sub}` は切らない。
 
 ### entities
 
-複数のドメインで共通して使われるものを定義する。`UserAvatar` など。
-複数のドメインにまたがるということは、それ自体に名前があるものであるはず。
-型と UI が基本。`fixtures/` も、複数のドメインで使い回すならここに置く。
+業務の実体 (名詞) を `entities/{domain}` にまとめる。置くのは、その実体の型 (`model.ts`)、その実体の資源だけを扱う通信
+(`apis/`。`fetchBook` `fetchBooks`)、その実体の表示 (`components/`。`BookStatusBadge`、`BookNoteList`)、fixtures。
+views の list と detail で同じものを使う、といった場合に置く
+(`BookNoteList` は `book-detail` と `book-note-list` の両方で使うので `entities/book-note/components/` にある)。
+view ごとに違う部分 (一覧だけが出す編集リンクなど) は `showEditLink` のような props で切り替える。
+リンク先の URL は文字列で組まず `shared/routes/` の関数から取る (shared の節)。
 
-entities 同士の import は許容する。owner が user の型を参照する、といった形をそのまま書いてよい。
-FSD には公開面を `@x` で限定する記法があるが、冗長で実装コストが高いので使わない。
-ただし、上位の層 (features や widgets) で合成すれば済む場合は、そちらを優先する。
+`{domain}` は views のフォルダ名の `{domain}` と対応させるのが原則。
+これは命名の指針で、import の条件ではない。view はどの entities でも import できる (views の節を参照)。
+Book の中に BookNote や BookProgress がある、という業務上の入れ子は、コードでは `entities/book-note` `entities/book-progress`
+として横に並べる。`entities/{domain}` の下に `{sub}` は切らない。
+
+entities 同士の import は許容する (§1)。`entities/book-note` が `entities/book` の `Book` 型を参照する、といった形をそのまま書いてよい。
+ただし依存を小さくできるなら、必要な項目だけを自分の型で持つ (`RecentBookNote` は `Book` 型ではなく `bookTitle: string` を持つ) か、
+上の層 (features・views) で合成するほうを優先する。
+
+**`entities/{domain}/apis/` は「その実体だけで完結する通信」の置き場で、その実体に触る通信が全部ある場所ではない。**
+1 つの view しか使わない通信は view の `apis/`、複数の実体をまたぐ通信は features や views の `apis/` にある。
+ある実体に触る通信を全部知りたいときは、生成クライアント (`@/generated/...`) の import 箇所を検索する。
 
 ### shared
 
@@ -194,7 +210,7 @@ Button のようなプリミティブから、Dialog のようにプリミティ
 画面の URL を組み立てる関数は `shared/routes/routes.ts` に置く (`routes.bookDetail(id)` など。キー名は
 [screens.md §3](screens.md) の view 名に合わせる)。`Link` の `href`、`redirect`、`revalidatePath` に渡すパスは
 文字列で組まず、必ずここから取る。URL の形を知るのは `app/` のルート定義とこのファイルだけになり、
-リンクを書く側 (views、features、app のレイアウト) は id を渡すだけになる。
+リンクを書く側 (views、features、entities、app のレイアウト) は id を渡すだけになる。
 これは FSD が shared の segment 例として挙げる `routes` (route constants) と同じ位置づけ。
 
 部品の内側でだけ使う部品や hook は、その部品の下に再帰的に置いてよい。
@@ -230,7 +246,7 @@ CLI が書く場所はファイル名も CLI の流儀に従い、story は書�
 
 ## 3. slice の中身
 
-slice (`views/{page}` `features/{domain}` `entities/{name}` `widgets/{name}`) の中も、
+slice (`views/{page}` `features/{domain}-{action}` `entities/{domain}` `widgets/{name}`) の中も、
 slice を持たない `shared` の中も、同じ規約で並べる。
 
 ### slice 直下の形
@@ -250,8 +266,9 @@ slice の直下にはカテゴリのディレクトリだけを置く。
 - 別の slice や別の層を参照するときは `@/` からの絶対パスで書く
 
 ```ts
-// features/user/components/UserFilterField/UserFilterField.tsx
+// features/user-filter/components/UserFilterField/UserFilterField.tsx
 import { useUserFilter } from '../../providers/UserFilterProvider'          // 同じ slice の中
+import { USER_ROLE_LABELS } from '@/entities/user/constants'                // 別の層
 import { Input } from '@/components/ui/input'                             // 別の層
 ```
 
@@ -416,7 +433,7 @@ API レスポンスの型（生成型）と画面で使う型（ドメイン型�
 実装とコロケーションする。`*.test.ts` は node、story は browser で動かす。
 Container の story は書かず、msw も使わない。story は Presenter だけで完結させる。
 
-story とテストで使うデータは slice の `fixtures/` に置く (`features/book/fixtures/books.ts`)。
+story とテストで使うデータは slice の `fixtures/` に置く (`entities/book/fixtures/books.ts`)。
 story やテストが import する道具も `fixtures/` に置く (`shared/fixtures/expectStable.ts` `shared/fixtures/stubFetch.ts`)。
 Storybook の仕組みそのもの (ツールバー、全 story に効く decorator とその部品) は `web/.storybook/` に置き、`src/` には入れない。
 

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import { Table, TableBody } from "@/components/ui/table";
-import { BOOK_FIXTURES } from "@/features/book/fixtures/books";
+import { BOOK_FIXTURES } from "@/entities/book/fixtures/books";
 import type { ActionResult } from "@/shared/apis/actionResult";
 
 import { BookRow } from "./BookRow";

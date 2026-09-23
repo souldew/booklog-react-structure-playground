@@ -1,4 +1,4 @@
-import { fetchBooks } from "@/features/book/apis/functions/fetchBooks";
+import { fetchBooks } from "@/entities/book/apis/functions/fetchBooks";
 
 import { updateBookStatus } from "../../apis/functions/updateBookStatus";
 import { BookRows } from "./BookRows";

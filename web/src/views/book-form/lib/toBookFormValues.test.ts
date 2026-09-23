@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { BOOK_FIXTURES } from "@/features/book/fixtures/books";
+import { BOOK_FIXTURES } from "@/entities/book/fixtures/books";
 
 import { toBookFormValues } from "./toBookFormValues";
 

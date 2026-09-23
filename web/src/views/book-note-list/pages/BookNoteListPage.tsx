@@ -11,7 +11,7 @@ type Props = {
 };
 
 // ネストしたコレクションの一覧画面。見出しと追加リンクはデータに依存しないので境界の外。
-// 一覧の部品そのものは features/book-note のものなので、この view は pages/ しか持たない。
+// 一覧の部品そのものは entities/book-note のものなので、この view は pages/ しか持たない。
 export function BookNoteListPage({ bookId, notes }: Props) {
   return (
     <div className="space-y-4">

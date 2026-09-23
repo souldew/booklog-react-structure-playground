@@ -2,13 +2,16 @@
 
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
-import { BOOK_STATUS_LABELS } from "@/features/book/constants";
-import { BOOK_STATUSES, type BookFilter } from "@/features/book/model";
-import { useBookFilter } from "@/features/book/providers/BookFilterProvider";
+import { BOOK_STATUS_LABELS } from "@/entities/book/constants";
+import { BOOK_STATUSES } from "@/entities/book/model";
+
+import type { BookFilter } from "../../model";
+import { useBookFilter } from "../../providers/BookFilterProvider";
 
 const KEYWORD_PLACEHOLDER = "タイトル・著者で絞り込む";
 
-// Provider の条件を読み書きする。通信はしないので Presentational。
+// Provider の条件を読み書きする入力欄。通信はしないので Presentational。
+// 「絞り込む」という操作の UI なので、本の一覧画面 (views/book-list) ではなくこの feature が持つ。
 export function BookFilterField() {
   const { filter, updateFilter } = useBookFilter();
 

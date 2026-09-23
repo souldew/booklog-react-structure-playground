@@ -5,8 +5,8 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
-import { BOOK_STATUS_LABELS } from "@/features/book/constants";
-import { BOOK_STATUSES } from "@/features/book/model";
+import { BOOK_STATUS_LABELS } from "@/entities/book/constants";
+import { BOOK_STATUSES } from "@/entities/book/model";
 import { FormField } from "@/shared/components/FormField/FormField";
 
 import type { BookFormAction, BookFormValues } from "../../model";

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { fetchBook } from "@/features/book/apis/functions/fetchBook";
+import { fetchBook } from "@/entities/book/apis/functions/fetchBook";
 
 import { BookInfo } from "./BookInfo";
 

@@ -1,5 +1,5 @@
-import { toBookStatusResponse } from "@/features/book/apis/mappers/mapBookStatus";
-import type { BookStatus } from "@/features/book/model";
+import { toBookStatusResponse } from "@/entities/book/apis/mappers/mapBookStatus";
+import type { BookStatus } from "@/entities/book/model";
 import type { BookUpdate } from "@/generated/model";
 
 import type { BookFormValues } from "../../model";

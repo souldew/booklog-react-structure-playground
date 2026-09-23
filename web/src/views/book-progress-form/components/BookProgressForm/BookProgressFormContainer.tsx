@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
-import { fetchBookProgress } from "@/features/book-progress/apis/functions/fetchBookProgress";
-import { fetchBook } from "@/features/book/apis/functions/fetchBook";
+import { fetchBookProgress } from "@/entities/book-progress/apis/functions/fetchBookProgress";
+import { fetchBook } from "@/entities/book/apis/functions/fetchBook";
 
 import { updateBookProgress } from "../../apis/functions/updateBookProgress";
 import { toBookProgressFormValues } from "../../lib/toBookProgressFormValues";

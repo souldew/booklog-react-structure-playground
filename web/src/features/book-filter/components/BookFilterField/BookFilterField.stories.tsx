@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, userEvent, within } from "storybook/test";
 
-import { BookFilterProvider } from "@/features/book/providers/BookFilterProvider";
-
+import { BookFilterProvider } from "../../providers/BookFilterProvider";
 import { BookFilterField } from "./BookFilterField";
 
 // 条件は Provider が持つので decorator で包む。初期値は EMPTY_BOOK_FILTER。

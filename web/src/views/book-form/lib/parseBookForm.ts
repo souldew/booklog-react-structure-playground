@@ -1,4 +1,4 @@
-import type { BookStatus } from "@/features/book/model";
+import type { BookStatus } from "@/entities/book/model";
 import { firstFieldErrors } from "@/shared/lib/fieldErrors";
 
 import { type BookFormFieldErrors, BookFormSchema, type BookFormValues } from "../model";

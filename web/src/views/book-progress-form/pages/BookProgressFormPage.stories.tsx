@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, fn, within } from "storybook/test";
 
-import { BOOK_PROGRESS_FIXTURE } from "@/features/book-progress/fixtures/bookProgress";
-import { BOOK_FIXTURES } from "@/features/book/fixtures/books";
+import { BOOK_PROGRESS_FIXTURE } from "@/entities/book-progress/fixtures/bookProgress";
+import { BOOK_FIXTURES } from "@/entities/book/fixtures/books";
 
 import { BookProgressForm } from "../components/BookProgressForm/BookProgressForm";
 import { BookProgressFormSkeleton } from "../components/BookProgressFormSkeleton/BookProgressFormSkeleton";

@@ -3,9 +3,8 @@ import type { ReactNode } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Table, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { BookFilterField } from "@/features/book-filter/components/BookFilterField/BookFilterField";
 import { routes } from "@/shared/routes/routes";
-
-import { BookFilterField } from "../components/BookFilterField/BookFilterField";
 
 type Props = {
   /** 行。Container が Suspense で包んで注入する */

@@ -11,7 +11,7 @@ type BookFilterContextValue = {
 
 const BookFilterContext = createContext<BookFilterContextValue | undefined>(undefined);
 
-// app/books/layout.tsx にマウントする。寿命は /books セクション。
+// web/app/books/layout.tsx にマウントする。寿命は /books セクション。
 // 一覧 → 詳細 → 一覧 と next/link で往復しても条件が残り、フル再読み込みでは消える。
 export function BookFilterProvider({ children }: { children: ReactNode }) {
   const [filter, setFilter] = useState<BookFilter>(EMPTY_BOOK_FILTER);

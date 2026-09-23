@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { BOOK_FIXTURE_LIST, BOOK_FIXTURES } from "../fixtures/books";
+import { BOOK_FIXTURE_LIST, BOOK_FIXTURES } from "@/entities/book/fixtures/books";
+
 import { EMPTY_BOOK_FILTER } from "../model";
 import { filterBooks } from "./filterBooks";
 

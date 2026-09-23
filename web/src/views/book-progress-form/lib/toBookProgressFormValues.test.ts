@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { BOOK_PROGRESS_FIXTURE } from "@/features/book-progress/fixtures/bookProgress";
+import { BOOK_PROGRESS_FIXTURE } from "@/entities/book-progress/fixtures/bookProgress";
 
 import { toBookProgressFormValues } from "./toBookProgressFormValues";
 

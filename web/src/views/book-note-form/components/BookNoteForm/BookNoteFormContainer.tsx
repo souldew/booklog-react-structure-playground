@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { fetchBookNotes } from "@/features/book-note/apis/functions/fetchBookNotes";
+import { fetchBookNotes } from "@/entities/book-note/apis/functions/fetchBookNotes";
 
 import { updateBookNote } from "../../apis/functions/updateBookNote";
 import { toBookNoteFormValues } from "../../lib/toBookNoteFormValues";

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { fetchBook } from "@/features/book/apis/functions/fetchBook";
+import { fetchBook } from "@/entities/book/apis/functions/fetchBook";
 
 import { updateBook } from "../../apis/functions/updateBook";
 import { toBookFormValues } from "../../lib/toBookFormValues";

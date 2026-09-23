@@ -1,4 +1,4 @@
-import type { BookNote } from "@/features/book-note/model";
+import type { BookNote } from "@/entities/book-note/model";
 
 import type { BookNoteFormValues } from "../model";
 

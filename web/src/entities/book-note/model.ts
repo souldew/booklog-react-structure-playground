@@ -10,7 +10,8 @@ export type BookNote = {
 };
 
 // 本を横断して並べるときのメモ。どの本のメモかを示すためにタイトルを持つ。
-// Book 型そのものは持たない。features/book を import すると兄弟 import になるため、必要な項目だけを自分の型で持つ。
+// Book 型そのものは持たず、必要な項目だけを自分の型で持つ。entities/book への依存を「タイトルの文字列」に絞るため
+// (entities 同士の import は許されているが、本の構造に依存しないほうが変更に強い)。
 export type RecentBookNote = BookNote & {
   bookTitle: string;
 };

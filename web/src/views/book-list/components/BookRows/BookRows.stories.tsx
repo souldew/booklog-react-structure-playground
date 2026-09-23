@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
 
 import { Table } from "@/components/ui/table";
-import { BOOK_FIXTURE_LIST } from "@/features/book/fixtures/books";
-import { BookFilterProvider } from "@/features/book/providers/BookFilterProvider";
+import { BOOK_FIXTURE_LIST } from "@/entities/book/fixtures/books";
+import { BookFilterProvider } from "@/features/book-filter/providers/BookFilterProvider";
 import type { ActionResult } from "@/shared/apis/actionResult";
 
 import { BookRows } from "./BookRows";

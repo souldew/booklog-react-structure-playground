@@ -1,4 +1,4 @@
-import type { Book } from "@/features/book/model";
+import type { Book } from "@/entities/book/model";
 
 import type { BookFormValues } from "../model";
 

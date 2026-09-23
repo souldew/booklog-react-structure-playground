@@ -16,11 +16,3 @@ export type Book = {
   /** ISO 8601 */
   createdAt: string;
 };
-
-// 一覧の絞り込み条件。Provider が持ち、セクション寿命で残る。
-export type BookFilter = {
-  status: BookStatus | "all";
-  keyword: string;
-};
-
-export const EMPTY_BOOK_FILTER: BookFilter = { status: "all", keyword: "" };

@@ -76,7 +76,7 @@ OpenAPI 上のパスと BFF のパスが一致するので、生成した hook �
 
 ### 生成型の境界は apis の出口
 
-生成した型と hook を import してよいのは、views や features の `apis/` の中だけ。
+生成した型と hook を import してよいのは、views・features・entities の `apis/` の中だけ。
 **境界は `apis/` の出口に引く。** `apis/functions/` と `apis/hooks/` が `apis/mappers/` を通して
 ドメイン型に変換して返し、Container も Presentational も生成型を知らない。
 サブディレクトリの役割は [directory-conventions.md](directory-conventions.md) の「apis の内側」にある。

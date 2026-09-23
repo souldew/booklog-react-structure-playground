@@ -1,5 +1,5 @@
 // 画面の URL を組み立てる関数。URL の形を知っているのはここと app/ のルート定義だけで、
-// リンクを書く側 (views、features、app のレイアウト) は文字列を組まずにこれを呼ぶ。
+// リンクを書く側 (views、features、entities、app のレイアウト) は文字列を組まずにこれを呼ぶ。
 // 引数は id の文字列だけで、どの本かを取得する処理は持たない (それは呼ぶ側の仕事)。
 // キー名は docs/screens.md の view 名に対応させる。
 export const routes = {

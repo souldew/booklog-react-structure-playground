@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, within } from "storybook/test";
 
-import { BookNoteList } from "@/features/book-note/components/BookNoteList/BookNoteList";
-import { BookNoteListSkeleton } from "@/features/book-note/components/BookNoteListSkeleton/BookNoteListSkeleton";
-import { BOOK_NOTE_FIXTURES } from "@/features/book-note/fixtures/bookNotes";
+import { BookNoteList } from "@/entities/book-note/components/BookNoteList/BookNoteList";
+import { BookNoteListSkeleton } from "@/entities/book-note/components/BookNoteListSkeleton/BookNoteListSkeleton";
+import { BOOK_NOTE_FIXTURES } from "@/entities/book-note/fixtures/bookNotes";
 
 import { BookNoteListPage } from "./BookNoteListPage";
 

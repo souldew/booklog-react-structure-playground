@@ -496,13 +496,54 @@ API_DELAY=0 pnpm dev                # 全 URL が 200、CSS が当たり、ヘ�
 
 ---
 
+## 14. `features` を `entities` に改名し、絞り込みを `features/book-filter` に切り出す
+
+層の名前を FSD に揃える。判断と対応表は [structure-notes.md §7](structure-notes.md)、規則は
+[directory-conventions.md](directory-conventions.md) の §1 の表と features / entities / widgets の節にある。
+
+```bash
+cd web
+git mv src/features src/entities                                   # 改名。中身は変えない
+# @/features/ → @/entities/ を 49 ファイルで置換
+mkdir -p src/features/book-filter/{providers,lib,components}
+git mv src/entities/book/providers/BookFilterProvider.tsx src/features/book-filter/providers/
+git mv src/entities/book/lib/filterBooks.ts src/entities/book/lib/filterBooks.test.ts src/features/book-filter/lib/
+git mv src/views/book-list/components/BookFilterField src/features/book-filter/components/
+```
+
+| 変更 | 内容 |
+|---|---|
+| `entities/{book,book-note,book-progress,stats}` | 旧 `features/…`。import の置換のほか、コメント内の「features」を entities の意味に書き直した |
+| `features/book-filter/` | `model.ts` (`BookFilter` `EMPTY_BOOK_FILTER`。旧 `entities/book/model.ts` から移動)、`providers/BookFilterProvider`、`lib/filterBooks`、`components/BookFilterField` (story 含む)。中身は import 先が entities に変わっただけ |
+| 参照側 | `views/book-list` の `BookListPage` `BookRows` と story、`web/app/books/layout.tsx` が `@/features/book-filter/...` を import |
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| 絞り込みを features に出すか、entities と views に分けたままにするか | 状態とロジックを entities、入力欄を views に分けると 1 つの操作が 2 層に割れる。条件は `web/app/books/layout.tsx` にマウントされて詳細をまたいで残るので、1 つの view に閉じていない。寿命を決め手に features に出した |
+| features の slice 名 | views の `{domain}-{detail}-{suffix}` と対にして `{domain}-{action}`。フラットに並べればドメイン順に揃う。FSD の slice group (`features/book/filter/`) は entities / views が 1 段なのに features だけ 2 段になるので採らない |
+| 改名後に features 層に入るもの | 絞り込みの 1 つ。読了トグルやフォームは 1 view の操作なので views のまま (FSD も「1 ページの操作は pages に」としている) |
+| `entities` の旧定義 (複数ドメインで共通に使う名前のあるもの) | 消えた。User が出たら普通の entity として `entities/user` |
+
+### 確認
+
+```bash
+pnpm --filter web test              # 67 files / 156 tests (件数は変わらない)
+pnpm --filter web typecheck
+pnpm lint
+pnpm format:check
+```
+
+---
+
 ## 未実施
 
 この時点では入れていないもの。それぞれの段階で入れる。
 
 | | 入れる段階 |
 |---|---|
-| `/settings/*` `/stats/monthly` `/notes/recent` のエンドポイント | 段階 4 と 5 |
+| `/settings/*` のエンドポイント | 段階 5。`/stats/monthly` `/notes/recent` は api に足してある |
 | `api` の Vitest (`app.request()`、DB の分離、`API_DELAY=0`) | 未定。web 側のスタブは「web はこう送る」しか担保しないので、契約の反対側として要る |
 | フォームライブラリ Conform (`@conform-to/react` + `@conform-to/zod`) | 段階 3 でフォームが 3 つになった。入れるかどうかは判断待ち。現状の残り定型と判断材料は [tech-stack.md §5](tech-stack.md) |
 | Server Action を `apis/functions/` から `actions/` に分ける | 段階 3 で Server Action が 6 本になった。判断待ち。本数と重複の箇所は [structure-notes.md §5](structure-notes.md) |

@@ -10,14 +10,14 @@
 
 規則は [directory-conventions.md](directory-conventions.md) の views の節にある。ここには読み違えた経緯だけ残す。
 
-`views/book-detail` が `features/book` と `features/book-note` の両方を import しているのを見て、
+`views/book-detail` が `entities/book` と `entities/book-note` の両方を import しているのを見て、
 「book 側が book-note を読んでいる」と読めた。実際に両方を知っているのは view であって、
-`features/book` と `features/book-note` は互いを import していない。
+`entities/book` と `entities/book-note` は互いを import していない。
 
 見誤りの元は 2 つ。
 
 - view 名の `{domain}` が「その view が知ってよいドメイン」に見える。実際は画面の主題を表すだけ
-- features の節の「`{domain}` は views のフォルダ名の `{domain}` と対応させる」が import の条件に見える。実際は命名の指針
+- entities の節の「`{domain}` は views のフォルダ名の `{domain}` と対応させる」が import の条件に見える。実際は命名の指針
 
 ---
 
@@ -28,29 +28,23 @@ gamification という画面は無い。
 
 ### 置けるか
 
-置ける。features は業務ドメインの単位で、views はそのドメインを URL に写したものにすぎない。
-画面があるドメインは名前を揃える、というのが「対応させる」の意味で、画面の無いドメインを禁じていない。
-ただし conventions の features の節は views から導かれるように読めるので、確定したら書き直す。
+置ける。「行動に感謝する」はユーザーの操作に反応する処理で、画面ではなく操作の単位なので features (動詞の層) が置き場になる。
+2 つ以上の view (本の追加、コメントの投稿) から呼ばれるので、features に出す条件も満たす。
 
 | 中身 | 置き場 |
 |---|---|
-| どの行動に感謝するか、何回目で特別な文言か、といったルールと型 | `features/gamification/model.ts` |
-| サンクス表示の状態 | `features/gamification/providers/ThanksProvider.tsx`。寿命はアプリ全体なので `src/app/providers/` で合成し `web/app/layout.tsx` からマウント |
-| トーストの見た目 | `features/gamification/components/ThanksToast/` |
-| 記録する処理 | `features/gamification/apis/functions/` か、通信が無ければ `lib/` |
+| どの行動に感謝するか、何回目で特別な文言か、といったルールと型 | `features/gamification-thanks/model.ts` |
+| サンクス表示の状態 | `features/gamification-thanks/providers/ThanksProvider.tsx`。寿命はアプリ全体なので `src/app/providers/` で合成し `web/app/layout.tsx` からマウント |
+| トーストの見た目 | `features/gamification-thanks/components/ThanksToast/` |
+| 記録する処理 | `features/gamification-thanks/apis/functions/` か、通信が無ければ `lib/` |
 
 呼ぶのは views。`views/book-form` の Server Action が成功時に記録関数を呼び、`views/timeline` のコメント投稿も同じ関数を呼ぶ。
-両方のドメインを知っているのは views なので、import の向きと矛盾しない。
 
 ### 「登録してもらった本の情報を出す」要件が来たとき
 
-gamification が `features/book` の `Book` 型を import すると兄弟 import になり禁止に触れる。逃げ方は 3 つ。
-
-| 案 | 内容 | 判断 |
-|---|---|---|
-| 1. 必要な項目だけを自分の型で持つ | `type Contribution = { kind: "book-added"; bookTitle: string } \| { kind: "note-posted"; bookTitle: string; page: number }`。`Book` は知らず、views の Server Action が詰め替えて渡す | **推奨。** 表示がタイトル程度ならこれで足りる。gamification が「本」の構造に依存しない |
-| 2. widgets に置く | `BookStatusBadge` を出す、`Book` 型をそのまま使う、など book の部品や型を丸ごと使いたくなったら、複数ドメインの合成なので `widgets/thanks/` に置く。widgets は features を複数 import できる | 部品まで使う段階で移る。docs の「基本は使わない」はまさにこの出番 |
-| 3. `Book` 型を entities に上げる | entities は「複数のドメインで共通して使われ、名前があるもの」なので定義には当たる | book の型だけ entities に移り、apis や provider は features に残って book が 2 箇所に割れる。勧めない |
+features は entities を import できるので、`entities/book` の `Book` 型や `BookStatusBadge` をそのまま使える。
+以前 (features がドメイン単位で、兄弟 import を禁じていた頃) は必要な項目だけを自分の型で持つ詰め替えが要った。
+いまも「本」の構造に依存したくなければ `{ kind: "book-added"; bookTitle: string }` のように必要な項目だけを持つ形は選べるが、必須ではない。
 
 ### 構成とは別の難所
 
@@ -62,11 +56,13 @@ gamification が `features/book` の `Book` 型を import すると兄弟 import
 ### timeline について
 
 コメントは本の入れ子ドメイン (BookNote に相当) なので、本を横断した一覧は新しいドメインではなく既存ドメインの別の切り口の画面。
-view 名は `dashboard` と同じく CRUD に対応しない性質として `views/timeline` にし、中身は `features/book-note` を使う。
+view 名は `dashboard` と同じく CRUD に対応しない性質として `views/timeline` にし、中身は `entities/book-note` を使う。
 
 ---
 
-## 3. features を「ドメイン横断」の層に読み替える案 (判断待ち)
+## 3. features を「ドメイン横断」の層に読み替える案 (確定済み。§7 で実施)
+
+§7 で実施した。層の名前は `domains` ではなく FSD の `entities` にし、`widgets` は残した。以下は検討時の記録。
 
 単数ドメインの層を `domains` と呼び、`features` を複数ドメインにまたがるものの層にする案。
 
@@ -102,9 +98,9 @@ app > views > features > domains > shared > components/ui
 (directory-conventions、tech-stack、setup、screens の「features/ へのパネル集約」など)。テストと story はパスが変わるだけ。
 `features/book` と `features/book-note` は互いを import していないので、改名で壊れる依存は無い。
 
-### 現状
+### 結果
 
-命名は当面いまのまま (features / widgets / entities) を維持する。
+§7 のとおり。名詞の層は `entities`、動詞の層は `features`、`widgets` は UI ブロックの合成として残す。
 
 ---
 
@@ -115,22 +111,22 @@ app > views > features > domains > shared > components/ui
 ### なぜ shared でよいか
 
 ヘッダーが持つ知識は「`/books` というリンクを出す」だけで、Book の型もデータも業務ルールも使わない。
-**URL はドメインの持ち物ではなく app の持ち物**で、`features/book` は自分が `/books` にあることを知らない
+**URL はドメインの持ち物ではなく app の持ち物**で、`entities/book` は自分が `/books` にあることを知らない
 ([screens.md §3](screens.md) が URL → view の写像を持つ)。ドメインの名前と URL の語が一致するのは同じ業務の語彙を使うからで、
 URL がドメインに属するからではない。
 
-features に置くと、`/dashboard` `/books` `/settings/profile` へのリンクで複数ドメインの URL を 1 つの features が知ることになり、
+entities に置くと、`/dashboard` `/books` `/settings/profile` へのリンクで複数ドメインの URL を 1 つの entity が知ることになり、
 合成になる。合成が要るなら widgets、要らないなら shared。
 
 | ヘッダーの中身 | 置き場 |
 |---|---|
 | 静的なリンクだけ | shared (または app のレイアウトにベタ書き) |
 | ログインユーザーの名前やアバター | widgets。entities の user を合成 |
-| 未読メモの件数バッジ | widgets。features の値を合成 |
+| 未読メモの件数バッジ | widgets。entities の値を合成 |
 
 パスは `shared/routes/routes.ts` の関数 (`routes.bookDetail(id)` など) にまとめてあり、views の `Link` も Server Action の
 `redirect` `revalidatePath` もヘッダーもここから取る (確定済み。規則は conventions の shared の節)。
-ドメインの slice (features) がリンクを出すときも、URL の形を書かずにこの関数を呼ぶ。`BookNoteList` の編集リンクが最初の例。
+ドメインの slice (entities) がリンクを出すときも、URL の形を書かずにこの関数を呼ぶ。`BookNoteList` の編集リンクが最初の例。
 
 ### 現状の構成
 
@@ -171,7 +167,7 @@ shared/components/GlobalNav/                          変えない
 
 import の向きは `app > widgets > entities > shared` の一方向で、shared の `GlobalNav` は widgets の存在を知らない。
 `AppLayout` が shared にあった間は widgets を import できず header をスロットで受ける必要があったが、app 層に移したことで不要になった。
-将来 `features/book-note` の未読件数を足すときも `GlobalHeader` が並べるだけで、`GlobalNav` は変わらない。
+将来 `entities/book-note` の未読件数を足すときも `GlobalHeader` が並べるだけで、`GlobalNav` は変わらない。
 静的なリンクだけの間は現状のままにし、データが要る部品が出た時点でこの形に移す。
 段階 4 (`/dashboard`) と段階 5 (`/settings`) でナビに足すのは `GlobalNav` の `NAV_LINKS` への 1 行ずつ。
 
@@ -190,9 +186,9 @@ import の向きは `app > widgets > entities > shared` の一方向で、shared
 分けるなら、Next の慣習どおり Server Action を slice の `actions/` に置き、`apis/functions/` は API のラッパーだけにする。
 
 ```
-features/book/apis/functions/updateBook.ts   PATCH /books/:id を叩いて Book を返すだけ
-views/book-form/actions/updateBook.ts        検証 → features の updateBook → revalidatePath → redirect
-views/book-list/actions/updateBookStatus.ts  features の updateBook → revalidatePath
+entities/book/apis/functions/updateBook.ts   PATCH /books/:id を叩いて Book を返すだけ
+views/book-form/actions/updateBook.ts        検証 → entities の updateBook → revalidatePath → redirect
+views/book-list/actions/updateBookStatus.ts  entities の updateBook → revalidatePath
 ```
 
 | | 内容 |
@@ -214,7 +210,7 @@ Server Action は 6 本になった。
 | `views/book-progress-form/apis/functions/` | `updateBookProgress` | `PUT /books/:id/progress` | 検証、`revalidatePath`、`redirect` |
 
 重複しているのは `PATCH /books/:id` を `updateBookStatus` と `updateBook` が別々に呼ぶ 1 箇所だけで、段階 2 から変わっていない。
-段階 3 で足した 3 本はそれぞれ別のエンドポイントで、ラッパーを features に置いても呼ぶのは Server Action 1 本ずつになる。
+段階 3 で足した 3 本はそれぞれ別のエンドポイントで、ラッパーを entities に置いても呼ぶのは Server Action 1 本ずつになる。
 つまり「重複が消える」効用はまだ 1 箇所分しかなく、増えたのは「`apis/functions/` に通信だけの関数と画面の都合を持つ関数が同居する」件数のほう
 (`fetchXxx` 4 本、Server Action 6 本)。
 
@@ -256,10 +252,57 @@ Next.js の `app` ディレクトリはルーティングの規約で、FSD の 
 | `web/app/globals.css` | `src/app/styles/globals.css` | `web/app/layout.tsx`、`.storybook/preview.tsx`、`components.json` |
 
 移さなかったもの: `FormPageLayout` (Page が中身として描く部品。FSD でも shared)、`GlobalNav` `FormField` (部品)、
-`BookFilterProvider` (ドメインの状態でセクション寿命。features)、`routes.ts` (URL を組む部品。shared)、
+`BookFilterProvider` (「絞り込む」操作の状態。`features/book-filter`)、`routes.ts` (URL を組む部品。shared)、
 `next/font` とメタデータ (Next 固有なので Root Layout に残す)。`providers/` はアプリ全体の Provider が出るまで作らない。
 
 ### React Router のとき
 
 library mode では規約ディレクトリが無いので `src/app/` がルート定義 (`routes/`) と起点 (`entrypoint/`) も持ち、`web/app` に当たるものは無い。
 framework mode は Remix 系のファイルベースで、Next と同じく規約ディレクトリを `src/` の外に置いて分ける。
+
+---
+
+## 7. `features` を `entities` に改名し、features を操作 (動詞) の層にする (確定済み)
+
+規則は conventions の §1 の表と、features / entities / widgets の節にある。ここには経緯と対応表を残す。
+
+### なぜ
+
+以前の規則は `features/{domain}` を業務ドメインの単位 (型・通信・表示) にしていた。これは FSD の `entities` に当たり、
+FSD を知る人が読むと最初に引っかかる。また、複数ドメインをまたぐ操作 (本を読了にして進捗も動かす、など) の置き場が無く、
+widgets (UI の合成) に無理に入れるか、必要な項目だけを詰め替える回避が要った (§2 の旧案 1)。
+FSD の名前に揃え、動詞の層を用意することで、この 2 つが解消する。
+
+### 対応表
+
+| 以前 | いま | 中身 |
+|---|---|---|
+| `features/book` `features/book-note` `features/book-progress` `features/stats` | `entities/…` | 改名のみ。中身は変えない |
+| 旧 `entities` (複数ドメインで共通に使う `UserAvatar` など。実物は無かった) | `entities/user` に吸収 | User も普通の entity。特別な意味は無くなる |
+| `widgets` | `widgets` | 複数 entities の UI ブロック。操作の合成は features へ |
+| (無し) | `features/{domain}-{action}` | ユーザーの操作。1 view に閉じないもの |
+| `views` | `views` | 変わらず |
+
+import の向き `app > views > widgets > features > entities > shared` は FSD の順そのままで、改名前から変わっていない。
+
+### features に出したもの
+
+「本の絞り込み」を `features/book-filter` に切り出した。状態 (`BookFilterProvider`、旧 `entities/book/providers`)、
+ロジック (`filterBooks`、旧 `entities/book/lib`)、型 (`BookFilter`、旧 `entities/book/model.ts`)、入力欄 (`BookFilterField`、旧 `views/book-list/components`)
+が 1 つの slice に揃う。
+
+出す判断の決め手は寿命。条件を読むのは一覧だけだが、`web/app/books/layout.tsx` にマウントされて詳細をまたいで残る。
+1 つの view に閉じていないので、entities (実体) に預けるより操作としての置き場を与えたほうが意味が通る。
+
+他の操作 (読了トグル、本・メモ・進捗のフォーム) は 1 つの view でしか使わないので views のまま。FSD 自身が
+「1 ページの操作は pages に置いてよい」としているので、features 層に入っているのが 1 つでも不自然ではない。
+
+### FSD との対応 (改名後)
+
+| FSD | このプロジェクト | 差 |
+|---|---|---|
+| entities (名詞) | entities | 同じ。entities 同士の import は許容する。FSD の `@x` 記法 (公開面の限定) は管理コストが大きいので使わない |
+| features (動詞、再利用されるもの) | features | 同じ。slice 名を `{domain}-{action}` で揃える点だけ独自 |
+| widgets | widgets | 同じ |
+| pages | views | 名前だけ (Next の `src/pages` と衝突するため) |
+| app | `web/app` + `src/app` | §6 |

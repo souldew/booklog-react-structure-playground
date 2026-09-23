@@ -1,4 +1,4 @@
-import type { BookProgress } from "@/features/book-progress/model";
+import type { BookProgress } from "@/entities/book-progress/model";
 
 import type { BookProgressFormValues } from "../model";
 

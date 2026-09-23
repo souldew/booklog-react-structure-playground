@@ -1,5 +1,5 @@
-import { BookStatusBadge } from "@/features/book/components/BookStatusBadge/BookStatusBadge";
-import type { Book } from "@/features/book/model";
+import { BookStatusBadge } from "@/entities/book/components/BookStatusBadge/BookStatusBadge";
+import type { Book } from "@/entities/book/model";
 import { formatDate } from "@/shared/lib/formatDate";
 
 type Props = {

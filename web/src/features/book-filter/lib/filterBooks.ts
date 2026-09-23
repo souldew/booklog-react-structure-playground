@@ -1,4 +1,6 @@
-import type { Book, BookFilter } from "../model";
+import type { Book } from "@/entities/book/model";
+
+import type { BookFilter } from "../model";
 
 // 一覧の絞り込み。部分一致だけで、全文検索やインデックスは扱わない (docs/overview.md スコープ外)。
 export function filterBooks(books: Book[], filter: BookFilter): Book[] {

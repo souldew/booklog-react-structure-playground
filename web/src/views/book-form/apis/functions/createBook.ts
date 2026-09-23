@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { toBook } from "@/features/book/apis/mappers/toBook";
+import { toBook } from "@/entities/book/apis/mappers/toBook";
 import { createBook as postBook } from "@/generated/books/books";
 import { hasFieldErrors } from "@/shared/lib/fieldErrors";
 import { routes } from "@/shared/routes/routes";

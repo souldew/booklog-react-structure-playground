@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { BOOK_STATUSES, type BookStatus } from "@/features/book/model";
+import { BOOK_STATUSES, type BookStatus } from "@/entities/book/model";
 
 // フォームの値の型。Presentational はこれだけを知り、API の型 (BookCreate / BookUpdate) は知らない (docs/backend.md §1)。
 // 入力欄の値は文字列のまま持つ。検証に落ちたときに入力したままの文字を再表示するため。

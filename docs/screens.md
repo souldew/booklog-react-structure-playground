@@ -175,9 +175,10 @@ Book と 1:N。コレクションにする根拠。
 
 | 対象 | 定義 | マウント | 寿命 |
 |---|---|---|---|
-| 本の絞り込み条件 | `features/book/providers/` | `app/books/layout.tsx` | セクション |
+| 本の絞り込み条件 | `features/book-filter/providers/` | `web/app/books/layout.tsx` | セクション |
 
-`book-list` と `book-detail` の両方の view から読むので、view ではなく `features/book/` に置く。
+条件を読むのは `book-list` だけだが、詳細をまたいで残すためにレイアウトにマウントする。
+view より寿命が長い操作の状態なので、view ではなく「絞り込む」操作の slice `features/book-filter` に置く。
 
 一覧 → 詳細 → 一覧 と往復しても条件が残ることを確かめる。
 アプリ内のリンクはすべて `next/link` にする。フル再読み込みでは残らないため。

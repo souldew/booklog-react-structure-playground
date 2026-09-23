@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { BOOK_FIXTURES } from "@/features/book/fixtures/books";
+import { BOOK_FIXTURES } from "@/entities/book/fixtures/books";
 
 import { parseBookForm } from "../../lib/parseBookForm";
 import { toBookFormValues } from "../../lib/toBookFormValues";

@@ -1,9 +1,9 @@
 "use client";
 
 import { TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { filterBooks } from "@/features/book/lib/filterBooks";
-import type { Book, BookStatus } from "@/features/book/model";
-import { useBookFilter } from "@/features/book/providers/BookFilterProvider";
+import type { Book, BookStatus } from "@/entities/book/model";
+import { filterBooks } from "@/features/book-filter/lib/filterBooks";
+import { useBookFilter } from "@/features/book-filter/providers/BookFilterProvider";
 import type { ActionResult } from "@/shared/apis/actionResult";
 
 import { BookRow } from "../BookRow/BookRow";

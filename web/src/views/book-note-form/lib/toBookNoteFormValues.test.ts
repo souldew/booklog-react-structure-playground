@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { BOOK_NOTE_FIXTURES } from "@/features/book-note/fixtures/bookNotes";
+import { BOOK_NOTE_FIXTURES } from "@/entities/book-note/fixtures/bookNotes";
 
 import { toBookNoteFormValues } from "./toBookNoteFormValues";
 

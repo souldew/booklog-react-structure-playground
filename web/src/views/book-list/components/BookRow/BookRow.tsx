@@ -5,8 +5,8 @@ import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { BookStatusBadge } from "@/features/book/components/BookStatusBadge/BookStatusBadge";
-import type { Book, BookStatus } from "@/features/book/model";
+import { BookStatusBadge } from "@/entities/book/components/BookStatusBadge/BookStatusBadge";
+import type { Book, BookStatus } from "@/entities/book/model";
 import type { ActionResult } from "@/shared/apis/actionResult";
 import { routes } from "@/shared/routes/routes";
 

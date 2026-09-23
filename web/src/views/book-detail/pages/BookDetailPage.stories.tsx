@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, within } from "storybook/test";
 
-import { BookNoteList } from "@/features/book-note/components/BookNoteList/BookNoteList";
-import { BookNoteListSkeleton } from "@/features/book-note/components/BookNoteListSkeleton/BookNoteListSkeleton";
-import { BOOK_NOTE_FIXTURES } from "@/features/book-note/fixtures/bookNotes";
-import { BOOK_FIXTURES } from "@/features/book/fixtures/books";
+import { BookNoteList } from "@/entities/book-note/components/BookNoteList/BookNoteList";
+import { BookNoteListSkeleton } from "@/entities/book-note/components/BookNoteListSkeleton/BookNoteListSkeleton";
+import { BOOK_NOTE_FIXTURES } from "@/entities/book-note/fixtures/bookNotes";
+import { BOOK_FIXTURES } from "@/entities/book/fixtures/books";
 import { expectStable } from "@/shared/fixtures/expectStable";
 
 import { BookInfo } from "../components/BookInfo/BookInfo";

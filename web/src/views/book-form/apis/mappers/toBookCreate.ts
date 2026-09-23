@@ -1,4 +1,4 @@
-import { toBookStatusResponse } from "@/features/book/apis/mappers/mapBookStatus";
+import { toBookStatusResponse } from "@/entities/book/apis/mappers/mapBookStatus";
 import type { BookCreate } from "@/generated/model";
 
 import type { BookFormValues } from "../../model";

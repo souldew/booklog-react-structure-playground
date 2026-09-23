@@ -12,8 +12,8 @@ type Props = {
 };
 
 // メモの一覧。メモには詳細画面が無いので、本文をここに全部出す。
-// 本の詳細 (views/book-detail) とメモ一覧 (views/book-note-list) の両方から使うので features に置く
-// (同じドメインの複数の view で使うものは features。docs/directory-conventions.md)。
+// 本の詳細 (views/book-detail) とメモ一覧 (views/book-note-list) の両方から使う実体の表示なので entities に置く
+// (実体の表示は entities。docs/directory-conventions.md)。
 // 編集画面の URL は shared/routes から取る。URL の形をここに書かないため。
 export function BookNoteList({ notes, showEditLink = false }: Props) {
   if (notes.length === 0) {
