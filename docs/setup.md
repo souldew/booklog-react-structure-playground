@@ -607,6 +607,23 @@ API_DELAY=0 pnpm dev
 段階 4 で入れたクライアント取得 (TanStack Query) を撤去し、`/dashboard` を他の画面と同じ
 Server Component + `Suspense` の形にした。決めごとは [tech-stack.md §4](tech-stack.md)。
 
+**先に画面をサーバー取得で組み直し、動くことを確かめてから道具を外す。**
+逆にすると、Query を外した時点から画面が動かない期間ができる。
+
+### 手順 1: 画面をサーバー取得で組み直す
+
+| 置き場 | 消したもの |
+|---|---|
+| `views/dashboard/components/*/` | 3 つの `XxxClientContainer` |
+
+| 置き場 | 置いたもの |
+|---|---|
+| `views/dashboard/components/` | `ReadingBookListContainer` (`fetchBooks({ status: "reading" })` の後に `Promise.all` で `fetchBookProgress` を並列に取り、本と進捗を組にする)、`RecentBookNoteListContainer` (`fetchRecentBookNotes`)、`BookReadingStatTableContainer` (`fetchBookReadingStats`)。Presentational・Skeleton・story は段階 4 のまま |
+| `views/dashboard/pages/DashboardPageContainer` | `QueryBoundary` × 3 を `Suspense` × 3 に。`BookListPageContainer` と同じ形 |
+| `web/app/dashboard/error.tsx` | 画面単位のエラー表示。`app/books/error.tsx` と同じ形 |
+
+### 手順 2: クライアント取得の道具を外す
+
 ```bash
 cd web
 pnpm remove @tanstack/react-query react-error-boundary
@@ -619,17 +636,14 @@ pnpm --filter web codegen        # orval.config.ts の client を "react-query" 
 | `shared/components/QueryBoundary/` | `QueryBoundary`、付属品の `QueryBoundaryClientOnly`、story |
 | `shared/components/LoadError/` | 失敗の見た目と再試行ボタン、story |
 | `entities/*/apis/hooks/` | `useBooks` `useBookProgresses` `useRecentBookNotes` `useBookReadingStats`。`apis/` の下に `hooks/` という segment は無くなった |
-| `views/dashboard/components/*/` | 3 つの `XxxClientContainer` |
 | `shared/apis/queryClient.ts` `.storybook/queryClient.tsx` | QueryClient の生成と、全 story を包む decorator (`withQueryClient`) |
 | `web/app/layout.tsx` | `QueryProvider` のマウント |
 
-| 置き場 | 置いたもの |
+| 置き場 | 置いたもの・直したもの |
 |---|---|
 | `orval.config.ts` | `client: "fetch"`。`override.query` の `useSuspenseQuery` 指定も外した。生成物はエンドポイントごとの関数だけになり、hook は生えない |
-| `views/dashboard/components/` | `ReadingBookListContainer` (`fetchBooks({ status: "reading" })` の後に `Promise.all` で `fetchBookProgress` を並列に取り、本と進捗を組にする)、`RecentBookNoteListContainer` (`fetchRecentBookNotes`)、`BookReadingStatTableContainer` (`fetchBookReadingStats`)。Presentational・Skeleton・story は段階 4 のまま |
-| `views/dashboard/pages/DashboardPageContainer` | `QueryBoundary` × 3 を `Suspense` × 3 に。`BookListPageContainer` と同じ形 |
-| `web/app/dashboard/error.tsx` | 画面単位のエラー表示。`app/books/error.tsx` と同じ形 |
 | Server Action 6 本 | `revalidatePath(routes.dashboard())` を追加 (`updateBookStatus` `createBook` `updateBook` `createBookNote` `updateBookNote` `updateBookProgress`)。それぞれの `.test.ts` にも `expect(revalidatePath).toHaveBeenCalledWith("/dashboard")` を足した |
+| `shared/apis/customFetch.ts` | throw を受けるのは TanStack Query の `isError` ではなく、取得はルートの `error.tsx`、更新は Server Action の `catch` |
 | `.storybook/preview.tsx` `vitest.config.mts` | `withQueryClient` decorator と、`optimizeDeps` の `@tanstack/react-query` を外した |
 
 ### 撤去に至った理由
@@ -728,6 +742,37 @@ curl -s -o /dev/null -w "%{http_code}\n" localhost:8787/stats/monthly   # 404
 
 `/dashboard` を開くと、まず画面全体の Skeleton (枠と見出しは出たまま) が届き、
 1.2 秒後に 3 パネルが同時に中身へ変わる。SSR の HTML にも 3 パネルとも中身が入る。
+
+---
+
+## 18. ブラウザから `api` を叩く経路の残りを削除する
+
+§16 で取得をサーバーに統一したあとも、ブラウザから `api` を直接叩く経路と BFF 経路のための
+設定が残っていた。**経路が 1 種類しか無いなら、その前提に乗ったものは持たない** ([backend.md §7](backend.md))。
+
+| 置き場 | 消したもの |
+|---|---|
+| `api/src/app.ts` | `hono/cors` と `app.use(cors({ origin: "http://localhost:3000" }))`。OpenAPI の description も「3 経路で呼ばれる」から実態に合わせた |
+| `shared/apis/customFetch.ts` | `resolveBaseUrl` の `typeof window` 分岐と `NEXT_PUBLIC_API_BASE_URL`、BFF 経路のための `baseUrl` オプション。`CustomFetchOptions` は素の `RequestInit` になった |
+| `web/.env.example` | `NEXT_PUBLIC_API_BASE_URL` の行。base URL は `API_BASE_URL` の 1 つだけ |
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| `baseUrl` オプションを渡している呼び出しは 0 件だった | BFF 経路を試す Container だけが使う想定の口だったが、その Container は段階 4 で作らないまま §16 で経路ごと消えていた。型に残っていただけで、実行されるコードは無かった |
+| description の変更が生成物 22 ファイルに波及する | `openApiInfo.description` は生成物のヘッダコメントに入る。1 行の変更でも `pnpm openapi` を流すと `web/src/generated/**` が全部差分になる |
+| 「選択肢として残す」は docs で残せる | 直接叩く形と BFF を挟む形の比較は [backend.md §7](backend.md) に文章として残し、コードは必要になった時点で足す。動かないコードを残しておくより、比較の観点だけ残すほうが腐らない |
+
+### 確認
+
+```bash
+pnpm --filter api typecheck
+pnpm --filter web test              # 65 files / 155 tests
+pnpm --filter web typecheck
+pnpm lint
+pnpm format:check
+```
 
 ---
 
