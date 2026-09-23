@@ -3,7 +3,7 @@ import type { Preview } from "@storybook/nextjs-vite";
 import { slotDelayGlobalTypes, slotDelayInitialGlobals, withSlotDelay } from "./slotDelay";
 
 // Tailwind と shadcn/ui のテーマを story にも当てる。
-import "../app/globals.css";
+import "../src/app/styles/globals.css";
 
 const preview: Preview = {
   parameters: {
