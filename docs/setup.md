@@ -738,7 +738,7 @@ curl -s -o /dev/null -w "%{http_code}\n" localhost:8787/stats/monthly   # 404
 | | 入れる段階 |
 |---|---|
 | `/settings/*` のエンドポイント | 段階 5。ダッシュボードが使う `/dashboard` は api に足してある |
-| BFF (`web/app/api/` の Route Handler) を挟む経路 | [backend.md §7](backend.md) の 4 つ目。ブラウザから取る画面が無くなったので、クライアント取得を入れ直す判断とセット ([tech-stack.md §4](tech-stack.md)) |
+| BFF (`web/app/api/` の Route Handler) を挟む経路 | [backend.md §7](backend.md)。ブラウザから取る画面が無くなったので、クライアント取得を入れ直す判断とセット ([tech-stack.md §4](tech-stack.md)) |
 | `api` の Vitest (`app.request()`、DB の分離、`API_DELAY=0`) | 未定。web 側のスタブは「web はこう送る」しか担保しないので、契約の反対側として要る |
 | フォームライブラリ Conform (`@conform-to/react` + `@conform-to/zod`) | 段階 3 でフォームが 3 つになった。入れるかどうかは判断待ち。現状の残り定型と判断材料は [tech-stack.md §5](tech-stack.md) |
 | Server Action を `apis/functions/` から `actions/` に分ける | 段階 3 で Server Action が 6 本になった。判断待ち。本数と重複の箇所は [structure-notes.md §5](structure-notes.md) |

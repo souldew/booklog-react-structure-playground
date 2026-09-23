@@ -48,27 +48,14 @@
 
 ### 生成したクライアントと通信経路の整合
 
-通信経路は 3 種類ある（[backend.md §7](backend.md)）。生成した hook を書き換えずに
-全部で使えるように、**mutator で base URL を切り替える**。
+通信経路はサーバーからの 1 種類だけ（[backend.md §7](backend.md)）なので、
+mutator が持つ base URL も `API_BASE_URL` の 1 つで済む。実行場所による分岐は置かない。
 
-| 実行場所 | base URL | 到達先 |
-|---|---|---|
-| サーバー（Server Component / Server Action） | `API_BASE_URL` | `api` に直接 |
-| ブラウザ、既定 | `NEXT_PUBLIC_API_BASE_URL` | `api` に直接。CORS を通る |
-| ブラウザ、BFF を試す Container | `/api` | `web/app/api/` の Route Handler が `api` へ中継 |
-
-mutator はサーバーかブラウザかを実行時に判定して上 2 つを選ぶ。
-3 つ目は、その Container だけが生成された関数の `request` オプションで上書きする。
-
-```ts
-listBooks(params, { baseUrl: "/api" });
-```
+経路が増えたときに base URL の切り替えを入れる場所は mutator になる。
+生成コードは相対パスしか渡さないので、経路が増えても生成物は共通のまま使える。
 
 mutator は 4xx / 5xx を `ApiError` として throw する。生成型の union には 404 の分岐もあるが、
 Server Component の error.tsx と Server Action の `catch` で受けるほうが素直なので、そちらに寄せる。
-
-Route Handler はパスをそのまま `api` に渡すだけの中継にする。
-OpenAPI 上のパスと BFF のパスが一致するので、生成したクライアントは 3 経路で共通になる。
 
 ### 生成型の境界は apis の出口
 

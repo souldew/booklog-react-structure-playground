@@ -222,16 +222,14 @@ mapper と型の境界という論点が消える。
 |---|---|
 | Server Component → `api` | 画面の取得 |
 | Server Action → `api` | 作成・更新・削除 |
-| Client Component → `api` | 使っていない。base URL は mutator が `NEXT_PUBLIC_API_BASE_URL` で持っている |
-| Client Component → `web/app/api/` → `api` | 使っていない。Route Handler は置いていない |
 
-下 2 つは、ブラウザだけで完結する取得が要るようになったときの選択肢として残してある。
-並べれば **BFF を挟むと何が変わるか**を比べられる。直接叩く形はブラウザに `api` の URL と CORS が露出し、
-BFF を挟む形は `web` 側に中継のコードが増える。
+**経路が 1 種類しかないので、その前提に乗ったものは持たない。**
+mutator の base URL は `API_BASE_URL` の 1 つだけで、`api` に CORS の設定は無く、
+`web/app/api/` の Route Handler も置いていない。
 
-`api` には Hono の `cors()` middleware を置き、`http://localhost:3000` からのリクエストを許してある。
-サーバーからしか叩かない今は無くても動くが、ブラウザから直接叩く経路を試すときに要る設定で、
-その経路のコストとして見える箇所になる。
+ブラウザから叩く画面が要るようになったら、`api` を直接叩く形と `web/app/api/` の Route Handler を
+挟む形 (BFF) のどちらかを選ぶ。直接叩く形はブラウザに `api` の URL が露出して CORS の設定が要り、
+BFF を挟む形は `web` 側に中継のコードが増える。どちらも必要になった時点で足す。
 
 更新後は Server Action の中で `revalidatePath` を呼ぶ。
 **呼び忘れると一覧が古いまま残る**ので、その状態も含めて確認できる。
@@ -263,6 +261,6 @@ pnpm openapi         # openapi.yaml の出力と web 側の型生成
 }
 ```
 
-`web` は `API_BASE_URL`（サーバー側）と `NEXT_PUBLIC_API_BASE_URL`（ブラウザ側）で `api` を参照する。
-どちらも `web/.env.local` に置く。`web/.env.example` をコピーすればローカルの既定値になる。
+`web` は `API_BASE_URL` で `api` を参照する。`web/.env.local` に置き、
+`web/.env.example` をコピーすればローカルの既定値になる。
 未設定のときは `http://localhost:8787` に落ちる。

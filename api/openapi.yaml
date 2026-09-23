@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: booklog api
   version: 0.1.0
-  description: 読書管理デモの API。web からは Server Component / Server Action / ブラウザの 3 経路で呼ばれる。
+  description: 読書管理デモの API。web からは Server Component と Server Action が呼ぶ。
 servers:
   - url: http://localhost:8787
 components:
