@@ -204,10 +204,10 @@ Server Action は 6 本になった。
 
 | 置き場 | Server Action | 叩くエンドポイント | 画面の都合 |
 |---|---|---|---|
-| `views/book-list/apis/functions/` | `updateBookStatus` | `PATCH /books/:id` | `revalidatePath("/books")` |
-| `views/book-form/apis/functions/` | `createBook` `updateBook` | `POST /books` `PATCH /books/:id` | 検証、`revalidatePath` × 2、`redirect` |
-| `views/book-note-form/apis/functions/` | `createBookNote` `updateBookNote` | `POST /books/:id/notes` `PATCH /books/:id/notes/:noteId` | 検証、`revalidatePath` × 2、`redirect` |
-| `views/book-progress-form/apis/functions/` | `updateBookProgress` | `PUT /books/:id/progress` | 検証、`revalidatePath`、`redirect` |
+| `views/book-list/apis/functions/` | `updateBookStatus` | `PATCH /books/:id` | `revalidatePath` × 2 (`/books` `/dashboard`) |
+| `views/book-form/apis/functions/` | `createBook` `updateBook` | `POST /books` `PATCH /books/:id` | 検証、`revalidatePath` × 2〜3、`redirect` |
+| `views/book-note-form/apis/functions/` | `createBookNote` `updateBookNote` | `POST /books/:id/notes` `PATCH /books/:id/notes/:noteId` | 検証、`revalidatePath` × 3、`redirect` |
+| `views/book-progress-form/apis/functions/` | `updateBookProgress` | `PUT /books/:id/progress` | 検証、`revalidatePath` × 2、`redirect` |
 
 重複しているのは `PATCH /books/:id` を `updateBookStatus` と `updateBook` が別々に呼ぶ 1 箇所だけで、段階 2 から変わっていない。
 段階 3 で足した 3 本はそれぞれ別のエンドポイントで、ラッパーを entities に置いても呼ぶのは Server Action 1 本ずつになる。
@@ -253,7 +253,8 @@ Next.js の `app` ディレクトリはルーティングの規約で、FSD の 
 
 移さなかったもの: `FormPageLayout` (Page が中身として描く部品。FSD でも shared)、`GlobalNav` `FormField` (部品)、
 `BookFilterProvider` (「絞り込む」操作の状態。`features/book-filter`)、`routes.ts` (URL を組む部品。shared)、
-`next/font` とメタデータ (Next 固有なので Root Layout に残す)。`providers/` はアプリ全体の Provider が出るまで作らない。
+`next/font` とメタデータ (Next 固有なので Root Layout に残す)。`src/app/` の中身は `layouts/` と `styles/` の 2 つで、
+アプリ全体の Provider (`providers/`) は該当物が出るまで作らない。
 
 ### React Router のとき
 
@@ -277,7 +278,7 @@ FSD の名前に揃え、動詞の層を用意することで、この 2 つが�
 
 | 以前 | いま | 中身 |
 |---|---|---|
-| `features/book` `features/book-note` `features/book-progress` `features/stats` | `entities/…` | 改名のみ。中身は変えない |
+| `features/book` `features/book-note` `features/book-progress` `features/stats` | `entities/…` | 改名のみ。中身は変えない (`stats` はその後 `book-reading-stat` に改名) |
 | 旧 `entities` (複数ドメインで共通に使う `UserAvatar` など。実物は無かった) | `entities/user` に吸収 | User も普通の entity。特別な意味は無くなる |
 | `widgets` | `widgets` | 複数 entities の UI ブロック。操作の合成は features へ |
 | (無し) | `features/{domain}-{action}` | ユーザーの操作。1 view に閉じないもの |

@@ -5,51 +5,12 @@
  * 読書管理デモの API。web からは Server Component / Server Action / ブラウザの 3 経路で呼ばれる。
  * OpenAPI spec version: 0.1.0
  */
-import {
-  queryOptions as queryOptionsBuilder,
-  useQuery,
-  useSuspenseQuery
-} from '@tanstack/react-query';
-import type {
-  DataTag,
-  DefinedInitialDataOptions,
-  DefinedUseQueryResult,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UndefinedInitialDataOptions,
-  UseQueryOptions,
-  UseQueryResult,
-  UseSuspenseQueryOptions,
-  UseSuspenseQueryResult
-} from '@tanstack/react-query';
-
 import type {
   ListRecentNotesParams,
   RecentBookNote
 } from '../model';
 
 import { customFetch } from '../../shared/apis/customFetch';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
-
-const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K };
-  for (const key of Object.keys(query)) {
-    // The explicit queryKey always wins, matching the previous
-    // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue;
-    Object.defineProperty(result, key, {
-      enumerable: true,
-      configurable: true,
-      get: () => (query as Record<string, unknown>)[key],
-    });
-  }
-  return result;
-};
 
 export type listRecentNotesResponse200 = {
   data: RecentBookNote[]
@@ -88,131 +49,5 @@ export const listRecentNotes = async (params?: ListRecentNotesParams, options?: 
 
   }
 );}
-
-
-
-
-
-export const getListRecentNotesQueryKey = (params?: ListRecentNotesParams,) => {
-    return [
-    `/notes/recent`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getListRecentNotesQueryOptions = <TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(params?: ListRecentNotesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListRecentNotesQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRecentNotes>>> = ({ signal }) => listRecentNotes(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ListRecentNotesQueryResult = NonNullable<Awaited<ReturnType<typeof listRecentNotes>>>
-export type ListRecentNotesQueryError = unknown
-
-
-export function useListRecentNotes<TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(
- params: undefined |  ListRecentNotesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listRecentNotes>>,
-          TError,
-          Awaited<ReturnType<typeof listRecentNotes>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListRecentNotes<TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(
- params?: ListRecentNotesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listRecentNotes>>,
-          TError,
-          Awaited<ReturnType<typeof listRecentNotes>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListRecentNotes<TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(
- params?: ListRecentNotesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useListRecentNotes<TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(
- params?: ListRecentNotesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getListRecentNotesQueryOptions(params,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export const getListRecentNotesSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(params?: ListRecentNotesParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListRecentNotesQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRecentNotes>>> = ({ signal }) => listRecentNotes(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
-}
-
-export type ListRecentNotesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listRecentNotes>>>
-export type ListRecentNotesSuspenseQueryError = unknown
-
-
-export function useListRecentNotesSuspense<TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(
- params: undefined |  ListRecentNotesParams, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListRecentNotesSuspense<TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(
- params?: ListRecentNotesParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListRecentNotesSuspense<TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(
- params?: ListRecentNotesParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useListRecentNotesSuspense<TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(
- params?: ListRecentNotesParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getListRecentNotesSuspenseQueryOptions(params,options)
-
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 

@@ -32,5 +32,6 @@ export async function createBook(state: BookFormState, formData: FormData): Prom
 
   // 一覧に新しい本を出す。redirect は throw で抜けるので try の外に置く。
   revalidatePath(routes.books());
+  revalidatePath(routes.dashboard());
   redirect(routes.bookDetail(createdId));
 }

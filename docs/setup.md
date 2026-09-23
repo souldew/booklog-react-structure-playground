@@ -204,7 +204,7 @@ mapper は当初 `lib/` に置いていたが、`@/generated/model` を import �
 |---|---|
 | 生成型のレスポンスが `200 \| 404` の union で `data` に `ErrorResponse` が混ざる | `response.status === 200` で絞ってから mapper に渡す。mutator が 4xx を throw するので実行時には 404 側に入らない |
 | 存在しない本の URL が HTTP 200 を返す | `notFound()` を Suspense 境界の中で呼んでいるため。ストリーミングが始まった後なのでステータスは変えられず、境界の中に not-found の UI が出る。見出しを先に出す設計とセットの挙動 |
-| `/` の飛び先 | `/dashboard` ができるまで `/books` にしてある。段階 4 で戻す |
+| `/` の飛び先 | `/dashboard` ができるまで `/books` にしてある。段階 4 (§15) で戻した |
 
 ### 確認
 
@@ -537,6 +537,140 @@ pnpm format:check
 
 ---
 
+## 15. 段階 4: `/dashboard` (クライアント取得)
+
+```bash
+cd web
+pnpm dlx shadcn@latest add progress -y
+pnpm --filter web codegen        # orval.config.ts に query.useSuspenseQuery: true を足して再生成
+```
+
+api の 2 エンドポイント (§14 の前に追加済み) と entities の取得・型はそのまま使い、view はクライアント取得 (TanStack Query) で組んだ。
+主眼は「パネルごとの境界」を Server Component ではなくクライアント取得で組むとどうなるか。決めごとは [tech-stack.md §4](tech-stack.md)。
+
+| 置き場 | 置いたもの |
+|---|---|
+| `orval.config.ts` | `override.query.useSuspenseQuery: true`。GET ごとに `useXxxSuspense` と `getXxxSuspenseQueryOptions` が生える。既存の `useXxx` はそのまま |
+| `entities/*/apis/hooks/` | `useBookReadingStats` `useRecentBookNotes` `useBooks({ status })` `useBookProgresses(bookIds)`。生成の Suspense 版 hook を `select` で mapper に通し、ドメイン型の値だけを返す。`useBookProgresses` は `useSuspenseQueries` に生成の queryOptions を渡す |
+| `src/app/providers/QueryProvider` | QueryClient を `useState` で 1 つ作る。既定は `retry` 1 回だけ。`web/app/layout.tsx` でアプリ全体にマウント。`src/app/providers/` の最初のファイル |
+| `shared/components/QueryBoundary/` | クライアント取得の境界。付属品 `QueryBoundaryClientOnly` (SSR とハイドレーション直後は fallback) と、react-error-boundary の `ErrorBoundary`・`QueryErrorResetBoundary`・`Suspense` を合成。story は story の中の `useSuspenseQuery` で suspend・失敗・再試行を再現 |
+| `.storybook/queryClient.tsx` | 全 story を `QueryClientProvider` で包む decorator (`withQueryClient`)。`preview.tsx` が登録する。story 用に `retry` は切る。アプリの `QueryProvider` は既定値が story に向かないので読まない |
+| `shared/components/LoadError/` | 失敗の見た目と再試行ボタン |
+| `views/dashboard/` | `model.ts` (`ReadingBook`)、`components/` に 3 パネルの Presentational・Skeleton・**ClientContainer**、`pages/` に `DashboardPage` と `DashboardPageContainer` (`QueryBoundary` × 3)。Presentational と Skeleton と story は Server Component 版と同じ |
+| `web/app/` | `dashboard/page.tsx`。`layout.tsx` (Root Layout) で `QueryProvider` をマウント。`page.tsx` のリダイレクト先を `/dashboard` に |
+| `GlobalNav` `shared/routes` | 「ダッシュボード」を先頭に。`routes.dashboard()` |
+
+### 書いたもの
+
+| 種別 | ファイル |
+|---|---|
+| story | `LoadError` (再試行あり / なし)、`QueryBoundary` (Default、`FailsThenRetry`)、`ReadingBookList` `RecentBookNoteList` `BookReadingStatTable` と Skeleton、`DashboardPage` (Default / Loading / StatsOnly / NotesLoading / Empty) |
+| test | 無し (hooks の単体テストは書かない。[tech-stack.md §7](tech-stack.md))。mapper と fetch のテストは §14 の前のコミットにある |
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| `useSuspenseQuery` を Client Component で使うと SSR でも取得が走り、ブラウザで Skeleton が 2 回出る | サーバーで取得して描いた HTML が届いた後、ブラウザの QueryClient は空なのでもう一度 suspend する。`QueryBoundaryClientOnly` (`useSyncExternalStore` でマウント前は false) で、SSR とハイドレーション直後は fallback を描き、マウント後に取得を始める。SSR の HTML は 3 パネルとも Skeleton |
+| 失敗後の再試行で同じエラーが即座に出る | TanStack Query がエラーをキャッシュしているため。`QueryErrorResetBoundary` の `reset` を `ErrorBoundary` の `onReset` に渡す。`resetErrorBoundary` が `onReset` を先に呼んでから自分の state を消す |
+| QueryProvider を画面の層 (`web/app/dashboard/layout.tsx`) に置いていた | tech-stack §4 の旧規則に従ったが、`/dashboard` から離れると layout ごと外れてキャッシュが捨てられ、戻ると全部取り直す。アプリ全体に 1 つ置く一般的な形に変え、定義は app 層の `src/app/providers/` にした。規則も書き換えた |
+| `useQuery` (`isPending` で分岐) ではなく `useSuspenseQuery` にした | 境界の位置と fallback の書き方を Server Component 版と揃え、比較できるようにするため。`isPending` 版だと分岐が ClientContainer の中に入り、Skeleton の置き場が変わる |
+| 本の数だけ進捗を取る | `useSuspenseQueries` に `getGetBookProgressSuspenseQueryOptions(bookId, { query: { select } })` を渡す。本の取得と進捗の取得で 2 回 suspend する (id が分かるまで進捗は取れない)。Server Component 版の `Promise.all` と同じ形 |
+| `QueryBoundary` の story で 1 回目だけ失敗させる | 試行回数を module の変数で数えると、再試行で「1 回目」に戻って失敗し続けた。描画ごとの `runId` をキーに数える |
+| `staleTime` 60 秒だと、Server Action の更新がダッシュボードに出ない | 本の一覧で `updateBookStatus` を実行しても、`revalidatePath` は Server Component のページを作り直すだけで Query キャッシュには届かない。1 分以内に戻ると読書中のパネルが古いまま残る。`staleTime` を外し、戻るたびに取り直す形にした。`invalidateQueries` を入れるのはミューテーションをクライアントに寄せると決めたとき |
+| `staleTime` を外しても 0 にはならない | `useSuspenseQuery` は `ensureSuspenseTimers` で `staleTime` を下限 1 秒に切り上げる。取得直後に stale になって取り直しが止まらなくなるのを防ぐため。画面を往復する分には毎回取り直す |
+| 再取得の間に Skeleton は出ない | suspend の条件が `suspense && result.isPending` で、`isPending` はデータが無い状態を指す。キャッシュがあれば `success` のまま `isFetching` が立つだけなので、古いデータを出したまま裏で取り直し、届いた時点で書き変わる |
+| story 用の `QueryClient` を decorator の JSX の中で `new` していた | Storybook は装飾済みの story 関数を React のコンポーネント型として描くので、decorator の本体は story ルートの再レンダーごとに走る。args やツールバーを操作するたび QueryClient が入れ替わりキャッシュが消える。`useState` で持つ小さなコンポーネントに切り出した (`QueryProvider` と同じ理由) |
+| Provider を要する story が 1 件でも `.storybook/` に出した | shared から app 層は import しないので story にベタ書きしていたが、`.storybook/` は FSD の層の外で、全 story に効く decorator の置き場と規約で決まっている ([directory-conventions.md](directory-conventions.md))。2 件目から書き足す場所が要らない |
+| `stats` という entity 名が薄い | 「何の統計か」が読めず、`book` `book-note` `book-progress` と並ばない。`entities/book-reading-stat` に改名し、型は `BookReadingStat`、api のスキーマ名も揃えた (URL `/stats/monthly` は変えない)。view の部品も `BookReadingStatTable` に |
+| `getMonthlyStats` のレスポンス型は 200 だけ、`getBookProgress` は `200 \| 404` の union | `select` で `response.status === 200` に絞るのは union のほうだけ。fetch 版 (`fetchBookProgress`) と同じ扱い |
+| Base UI の `Progress` に `aria-label` を付けても名前が変わらない | `ProgressLabel` が `aria-labelledby` を付け、そちらが優先される。progressbar の名前はラベルの文言 (「120 / 420 ページ」) |
+
+### 確認
+
+```bash
+pnpm --filter web test              # 69 files / 160 tests
+pnpm --filter web typecheck
+pnpm lint
+pnpm format:check
+API_DELAY=0 pnpm dev
+```
+
+`/` が `/dashboard` へ 307。`/dashboard` の SSR の HTML は見出し 3 つと Skeleton だけで、データは無い (`2026年` も `progressbar` も 0 件)。
+ヘッドレスブラウザで開くと、月別の表 (6 行)、読書中の本 2 冊の読了率 (35% / 46%)、最近のメモの本へのリンクが出る。
+ナビの「ダッシュボード」に `aria-current="page"` が付く。
+
+---
+
+## 16. `/dashboard` をサーバー取得に統一する
+
+段階 4 で入れたクライアント取得 (TanStack Query) を撤去し、`/dashboard` を他の画面と同じ
+Server Component + `Suspense` の形にした。決めごとは [tech-stack.md §4](tech-stack.md)。
+
+```bash
+cd web
+pnpm remove @tanstack/react-query react-error-boundary
+pnpm --filter web codegen        # orval.config.ts の client を "react-query" から "fetch" に戻して再生成
+```
+
+| 置き場 | 消したもの |
+|---|---|
+| `src/app/providers/` | `QueryProvider`。`src/app/` に残るのは `layouts/` と `styles/` の 2 つ |
+| `shared/components/QueryBoundary/` | `QueryBoundary`、付属品の `QueryBoundaryClientOnly`、story |
+| `shared/components/LoadError/` | 失敗の見た目と再試行ボタン、story |
+| `entities/*/apis/hooks/` | `useBooks` `useBookProgresses` `useRecentBookNotes` `useBookReadingStats`。`apis/` の下に `hooks/` という segment は無くなった |
+| `views/dashboard/components/*/` | 3 つの `XxxClientContainer` |
+| `shared/apis/queryClient.ts` `.storybook/queryClient.tsx` | QueryClient の生成と、全 story を包む decorator (`withQueryClient`) |
+| `web/app/layout.tsx` | `QueryProvider` のマウント |
+
+| 置き場 | 置いたもの |
+|---|---|
+| `orval.config.ts` | `client: "fetch"`。`override.query` の `useSuspenseQuery` 指定も外した。生成物はエンドポイントごとの関数だけになり、hook は生えない |
+| `views/dashboard/components/` | `ReadingBookListContainer` (`fetchBooks({ status: "reading" })` の後に `Promise.all` で `fetchBookProgress` を並列に取り、本と進捗を組にする)、`RecentBookNoteListContainer` (`fetchRecentBookNotes`)、`BookReadingStatTableContainer` (`fetchBookReadingStats`)。Presentational・Skeleton・story は段階 4 のまま |
+| `views/dashboard/pages/DashboardPageContainer` | `QueryBoundary` × 3 を `Suspense` × 3 に。`BookListPageContainer` と同じ形 |
+| `web/app/dashboard/error.tsx` | 画面単位のエラー表示。`app/books/error.tsx` と同じ形 |
+| Server Action 6 本 | `revalidatePath(routes.dashboard())` を追加 (`updateBookStatus` `createBook` `updateBook` `createBookNote` `updateBookNote` `updateBookProgress`)。それぞれの `.test.ts` にも `expect(revalidatePath).toHaveBeenCalledWith("/dashboard")` を足した |
+| `.storybook/preview.tsx` `vitest.config.mts` | `withQueryClient` decorator と、`optimizeDeps` の `@tanstack/react-query` を外した |
+
+### 撤去に至った理由
+
+クライアント取得で「パネルごとの境界」を作ると何が変わるかを見るために入れたが、次の順に畳んだ。
+
+| 段階 | 分かったこと |
+|---|---|
+| 1. クライアントだけで取る | `useSuspenseQuery` は SSR でも動くので、サーバーとブラウザで 2 回取る。実測でリクエストが 5 本から 10 本になり、HTML が返るまで 0.08 秒から 1.59 秒に伸びた |
+| 2. prerender を止める | `useSyncExternalStore` でマウント後だけ描く部品を入れると二重取得は消えるが、HTML から中身が消える。Next の SPA ガイドが挙げる形ではあるが、SSR を捨てる判断になる |
+| 3. サーバーで prefetch して `HydrationBoundary` で渡す | 二重取得も消え、HTML にも中身が入る (実測でブラウザからのリクエストは 0 本)。ただし Server Component で `await` するのと結果が変わらない |
+
+最後の形では TanStack Query の役割が「サーバーで取った値をブラウザのキャッシュに置く」だけになる。
+ブラウザ側で再取得も楽観更新もせず、更新は Server Action と `revalidatePath` で回るので、そのキャッシュに用が無い。
+入れ直す条件は、入力に応じた検索・ポーリング・無限スクロール・楽観更新のように、
+ブラウザだけで完結する取得が要るようになったとき。
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| エラーの受け口がパネル単位から画面単位になった | `QueryBoundary` は境界ごとに `ErrorBoundary` を持てたが、Server Component の失敗を受けるのはルートの `error.tsx` で、粒度はルートセグメント。1 枚でも失敗すれば `/dashboard` 全体が差し替わる |
+| 更新の反映は `revalidatePath` だけで決まる | Query キャッシュが無くなったので、段階 4 の `staleTime` の調整 (§15) は不要になった。代わりに、ダッシュボードに映る更新を持つ Server Action 6 本すべてに `revalidatePath(routes.dashboard())` を足す必要がある。1 本でも忘れると古いまま残る |
+| 減った story は 2 ファイルだけ (69 → 67 files、160 → 156 tests) | 消えたのは `QueryBoundary` と `LoadError` の story で、3 パネルの Presentational と Skeleton、`DashboardPage` の story はそのまま動く。story を Presentational だけで完結させてあると、取得の方式を替えても効かなくなる範囲が狭い |
+| 生成物から hook が消えても `apis/functions/` は変わらない | 段階 4 で hook を足したときも、`fetchBooks` などの関数は残したまま並べていた。Container が呼ぶ先を hook から関数に戻すだけで済み、entities の `apis/` とそのテストは触っていない |
+
+### 確認
+
+```bash
+pnpm --filter web test              # 67 files / 156 tests
+pnpm --filter web typecheck
+pnpm lint
+pnpm format:check
+API_DELAY=0 pnpm dev
+```
+
+`/dashboard` の SSR の HTML に 3 パネルとも中身が入る (月別の表の 6 行、読書中の本 2 冊の `progressbar`、
+最近のメモの本へのリンク)。段階 4 では見出しと Skeleton だけだった箇所。
+
+---
+
 ## 未実施
 
 この時点では入れていないもの。それぞれの段階で入れる。
@@ -544,8 +678,9 @@ pnpm format:check
 | | 入れる段階 |
 |---|---|
 | `/settings/*` のエンドポイント | 段階 5。`/stats/monthly` `/notes/recent` は api に足してある |
+| BFF (`web/app/api/` の Route Handler) を挟む経路 | [backend.md §7](backend.md) の 4 つ目。ブラウザから取る画面が無くなったので、クライアント取得を入れ直す判断とセット ([tech-stack.md §4](tech-stack.md)) |
 | `api` の Vitest (`app.request()`、DB の分離、`API_DELAY=0`) | 未定。web 側のスタブは「web はこう送る」しか担保しないので、契約の反対側として要る |
 | フォームライブラリ Conform (`@conform-to/react` + `@conform-to/zod`) | 段階 3 でフォームが 3 つになった。入れるかどうかは判断待ち。現状の残り定型と判断材料は [tech-stack.md §5](tech-stack.md) |
 | Server Action を `apis/functions/` から `actions/` に分ける | 段階 3 で Server Action が 6 本になった。判断待ち。本数と重複の箇所は [structure-notes.md §5](structure-notes.md) |
 | メモの削除 (`DELETE /books/:bookId/notes/:noteId`) | api にはあるが画面は未実装。一覧の行にインライン操作として置くなら `BookRow` の読了トグルと同じ形 (行単位の pending / error) になる |
-| 詳細画面に進捗を出す | 進捗を更新しても詳細には現れない。出すなら `features/book-progress` の部品を 3 つ目の Suspense 境界として `BookDetailPage` に足す。段階 4 のダッシュボードで進捗を出すので、そのときに合わせて考える |
+| 詳細画面に進捗を出す | 進捗はダッシュボードの「読書中の本」に出るが、詳細には現れない。出すなら 3 つ目の Suspense 境界として `BookDetailPage` に足す。読了率の計算は `entities/book-progress/lib/progressPercent` がある |

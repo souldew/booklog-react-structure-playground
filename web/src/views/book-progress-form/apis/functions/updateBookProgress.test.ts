@@ -35,6 +35,7 @@ describe("updateBookProgress", () => {
       { method: "PUT", path: "/books/2/progress", body: { current_page: 200 } },
     ]);
     expect(revalidatePath).toHaveBeenCalledWith("/books/2");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
     expect(redirect).toHaveBeenCalledWith("/books/2");
   });
 

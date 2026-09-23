@@ -38,5 +38,6 @@ export async function createBookNote(
   // メモは詳細画面にも出るので、一覧と詳細の両方を再検証する。redirect は throw で抜けるので try の外に置く。
   revalidatePath(routes.bookDetail(bookId));
   revalidatePath(routes.bookNotes(bookId));
+  revalidatePath(routes.dashboard());
   redirect(routes.bookNotes(bookId));
 }

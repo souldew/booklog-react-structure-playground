@@ -73,6 +73,7 @@ describe("createBook", () => {
       },
     ]);
     expect(revalidatePath).toHaveBeenCalledWith("/books");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
     expect(redirect).toHaveBeenCalledWith("/books/42");
   });
 

@@ -37,7 +37,7 @@ FSD は entities 同士の import を `@x` 記法 (公開面の限定) で許す
 | 層 | 置くもの |
 |---|---|
 | `web/app/` (ルーターの規約) | `page.tsx` `layout.tsx` `error.tsx` などの規約ファイル。結線だけで、マークアップもロジックも書かない |
-| `app/` (`src/app/`) | アプリ全体を組み立てるもの。画面をまたぐ枠 (`layouts/`)、グローバル CSS (`styles/`)、アプリ全体の Provider の合成 (`providers/`) |
+| `app/` (`src/app/`) | アプリ全体を組み立てるもの。画面をまたぐ枠 (`layouts/`)、グローバル CSS (`styles/`) |
 | `views/{domain}-{detail}-{suffix}/` | 1 画面。URL に対応する |
 | `widgets/{name}/` | 複数の entities を合成した UI ブロック。基本は使わない |
 | `features/{domain}-{action}/` | ユーザーの操作 (動詞)。1 つの view に閉じないもの。複数の entities を import してよい |
@@ -60,10 +60,10 @@ FSD の app 層は「アプリを動かすためのものすべて。ルーテ�
 | 場所 | 置くもの | 書かないもの |
 |---|---|---|
 | `web/app/` | ルーターの規約ファイル (`page.tsx` `layout.tsx` `error.tsx` `not-found.tsx` など)。URL と画面の結線、URL パラメータの解決、Provider と枠のマウント、`next/font` とメタデータ | マークアップとロジック。`error.tsx` のように規約上マークアップが要るものは、shared の部品を呼ぶだけにする |
-| `src/app/` | `layouts/` (画面をまたぐ枠。ヘッダー + `<main>`)、`styles/` (グローバル CSS)、`providers/` (アプリ全体の Provider の合成。出るまで作らない) | 画面の中身、部品、ドメインの状態 |
+| `src/app/` | `layouts/` (画面をまたぐ枠。ヘッダー + `<main>`)、`styles/` (グローバル CSS) | 画面の中身、部品、ドメインの状態 |
 
 分ける理由は、ルーターの規約ディレクトリでは「特別なファイル名しか置けない」「フォルダ名が URL に見える」という制約が掛かり、
-`layouts/` `providers/` のような segment を素直に置けないため。FSD 公式の Next.js 統合ガイドが挙げる 2 案のうち、
+`layouts/` `styles/` のような segment を素直に置けないため。FSD 公式の Next.js 統合ガイドが挙げる 2 案のうち、
 規約ディレクトリを外に出すほうを採っている ([structure-notes.md §6](structure-notes.md))。
 
 **app 層に入らないもの** の見分け方は「部品か、部品を組み立てる側か」。Button や `FormField` は全画面で使うが部品なので shared。
@@ -205,7 +205,9 @@ Button のようなプリミティブから、Dialog のようにプリミティ
 ドメインを持たないならここに置く。
 
 作るディレクトリは縛らない。`components/` `hooks/` `lib/` のほか、`routes/` `config/` `apis/` などを
-必要に応じて切る。
+必要に応じて切る。ただし **アプリ全体に 1 つだけ置くもの** (テーマの切り替えなど、アプリ全体で 1 つだけ持つ Context) は
+shared ではなく app 層の `src/app/providers/` (出るまで作らない)。shared は「どこからでも使える部品」で、
+「アプリの起動時に 1 回組み立てるもの」は app の仕事。
 
 画面の URL を組み立てる関数は `shared/routes/routes.ts` に置く (`routes.bookDetail(id)` など。キー名は
 [screens.md §3](screens.md) の view 名に合わせる)。`Link` の `href`、`redirect`、`revalidatePath` に渡すパスは
@@ -281,11 +283,11 @@ slice をディレクトリごと移しても、内側の相対パスは壊れ�
 
 | カテゴリ | 置くもの | FSD の segment |
 |---|---|---|
-| `apis/` | API 境界。`functions/` `hooks/` `mappers/` の 3 つに分ける (後述)。`@/generated` を import してよい唯一のカテゴリ | `api` |
+| `apis/` | API 境界。`functions/` `mappers/` の 2 つに分ける (後述)。`@/generated` を import してよい唯一のカテゴリ | `api` |
 | `components/` | コンポーネント。1 ディレクトリ = story 1 ファイル。story の無い部品は付属品として親のディレクトリに置く (後述) | `ui` |
 | `layouts/` | 骨格。`children` を受け取る | `ui` |
 | `pages/` | 画面の骨格と組み立て | `ui` |
-| `hooks/` | 2 つ以上のコンポーネントが使うフック。1 つしか使わないものはそのコンポーネントの付属品。生成 hook を包むものは `apis/hooks/` | `model` |
+| `hooks/` | 2 つ以上のコンポーネントが使うフック。1 つしか使わないものはそのコンポーネントの付属品 | `model` |
 | `providers/` | Context の Provider と、それを読むフック | `model` |
 | `model/` | 業務の知識。型、型を導く `as const`、zod スキーマ、業務ルールの値 | `model` |
 | `constants/` | 画面の都合の値のうち複数箇所で使うもの。ラベルの辞書、共有する文言。1 箇所ならベタ書き。業務の値は入れず `model` に置く | `ui` |
@@ -300,7 +302,7 @@ slice をディレクトリごと移しても、内側の相対パスは壊れ�
 |---|---|
 | `components/` `layouts/` | 常にディレクトリ。1 ファイルだけでも切る |
 | `pages/` | 常にフラット |
-| `apis/` | 常に `functions/` `hooks/` `mappers/` に分ける。1 ファイルだけでも切る。空のディレクトリは作らない |
+| `apis/` | 常に `functions/` `mappers/` に分ける。1 ファイルだけでも切る。空のディレクトリは作らない |
 | それ以外 | 原則フラット。数が多くなったらディレクトリへの昇格を考える |
 
 ### コンポーネント 1 つの内部
@@ -315,22 +317,33 @@ story の無い Presentational はコンポーネントではなく、後述の�
 | 種別 | ファイル名 | 役割 | story |
 |---|---|---|---|
 | Presentational | `Xxx.tsx` | 描画する。通信しない (context は読んでよい) | 書く |
-| Skeleton | `XxxSkeleton.tsx` | ローディング中の見た目 | 要件次第。単体で見たいなら書く |
+| Skeleton | `XxxSkeleton.tsx` | ローディング中の見た目 | 親の story に `Loading` として書く |
 | Container | `XxxContainer.tsx` | サーバーでデータを取得する、またはスロットへ注入する | 書かない |
-| Client Container | `XxxClientContainer.tsx` | クライアントで通信する (`useQuery` / `useMutation`) | 書かない |
 
 Presentational と Container の境界は「通信するか」で引く。context を読むだけなら Presentational のままでよい。
-`useMutation` はレンダーだけなら通信しないが、内包すると story から差し替えられないので Presentational には置かず、
-実行のきっかけは props で受け取る。
+Server Action は Presentational から呼んでよいが、関数そのものを内包すると story から差し替えられないので、
+実行のきっかけ (`BookRow` の `onChangeStatus` など) は props で受け取る。
 
-Skeleton の置き場は要件で決める。単体で story を見たいなら独立したコンポーネントとして別のディレクトリにし、
-そうでなければ Presentational の付属品として同じディレクトリに `XxxSkeleton.tsx` で置く。
-判断の基準は次の「付属品」と同じ。
+**Skeleton は Presentational の付属品**として、同じディレクトリに `XxxSkeleton.tsx` で置く。
+独立したディレクトリは作らない。Skeleton は親と 1 対 1 で、自分の状態も props も持たないので、
+次の「付属品」の 3 条件をいつも満たす。
+
+**story は親のファイルに `Loading` として 1 本書く。** ローディング状態の確認が目的で、
+本物と並ぶ位置に置くことで、列の構成や 1 件ぶんの高さが本物とずれていないかを見る。
+付属品に story を書くのはこれだけの例外で、`render` で args を無視して Skeleton を描く。
+
+```tsx
+export const Loading: Story = {
+  render: () => <BookReadingStatTableSkeleton />,
+};
+```
 
 #### 付属品
 
 そのコンポーネントしか使わないものは、そのディレクトリの中にある。これを付属品と呼ぶ。
 Container もこの見方では Presentational の付属品で、story を書かないのはそのため。
+付属品はディレクトリを持たないので story ファイルも持たない。
+例外は Skeleton で、親の story ファイルに `Loading` を 1 本だけ書く (前述)。
 
 次の 3 つを**すべて**満たすものだけを付属品にする。1 つでも外れたら独立したコンポーネントであり、
 ディレクトリと story を作る。
@@ -376,11 +389,11 @@ mapper は純粋関数だが `@/generated/model` を import するので、ド�
 | サブディレクトリ | 置くもの | 生成型 | 呼ぶ側 |
 |---|---|---|---|
 | `functions/` | 生成クライアントを呼び、mapper を通してドメイン型を返す async 関数。Server Action もここ。1 エンドポイント 1 ファイルで、1 関数の通信は 1 回。複数のエンドポイントの合成は Container で行う | import する | Server Component の Container、`app/` の `loader` / `action` |
-| `hooks/` | 生成された TanStack Query の hook を包み、`select` などで mapper を通してドメイン型を返す hook | import する | ClientContainer |
-| `mappers/` | 生成型 ⇄ ドメイン型の純粋関数。副作用なし。テストは node で書く | 型だけ import する | `functions/` `hooks/` |
+| `mappers/` | 生成型 ⇄ ドメイン型の純粋関数。副作用なし。テストは node で書く | 型だけ import する | `functions/` |
 
 `functions/` は `fetchers` にすると更新系が収まらないので、この名前にしている。
-`hooks/` は最初の ClientContainer ができるまで作らない。
+ブラウザで呼ぶ取得のフック (`hooks/`) は作らない。取得はすべてサーバーで行い、Server Component の Container が
+`functions/` を `await` する ([tech-stack.md §4](tech-stack.md))。取得中の分岐は、呼ぶ側が置く `Suspense` が持つ。
 
 `mappers/` は **生成型 1 つにつき関数 1 つ** にする。作成 (`BookNoteCreate`) と更新 (`BookNoteUpdate`) で送る中身が
 同じでも、`toBookNoteCreate` と `toBookNoteUpdate` に分け、1 つの関数を両方の生成型に流用しない。
@@ -389,7 +402,7 @@ API 側で片方のスキーマだけが変わったとき (作成に必須項�
 生成型が別である以上、変わり方も別になる。
 
 base URL、ヘッダー、エラーレスポンスの変換など全エンドポイントに共通する部分は `shared/apis/` に置く。
-`shared/apis/` はエンドポイントを持たないので、この 3 分割は適用せずフラットのままでよい。
+`shared/apis/` はエンドポイントを持たないので、この 2 分割は適用せずフラットのままでよい。
 
 ### model と constants の線引き
 
@@ -443,3 +456,6 @@ props で受け取る関数は `storybook/test` の `fn()` を渡し、実装は
 Page の story はスロットに取得後の Presentational や Skeleton を直接渡す。Container と Suspense は story では使わない。
 Skeleton からの切り替わりは `parameters.slots` にスロット名と Skeleton を宣言し、ツールバーの遅延で見る
 ([tech-stack.md §7](tech-stack.md))。Skeleton と中身を並べて比べるだけの story は書かない。切り替わりで見えるため。
+
+Skeleton を単体で見るのは、親の `Loading` story のほうが役割が近い。
+Page の story はどのパネルが先に解決するかの組み合わせを見る場所で、Skeleton 自体の作りを見る場所ではない。

@@ -13,7 +13,7 @@ Next.js とは別プロセスの API を立て、SQLite に永続化する。
 |---|---|
 | Presentational は API の型ではなくフォームの値の型を持つ | API の型が存在しないので mapper に仕事が無い |
 | API スキーマの変更は mapper で止まる | 変更が起きようが無い |
-| query key を共有しないと更新後に一覧が古いまま | 実際に古くならないので再現できない |
+| `revalidatePath` を呼び忘れると更新後に一覧が古いまま | 実際に古くならないので再現できない |
 | `disabled` な input は送信されず、値が壊れることがある | 送信先が無いので壊れない |
 | 一覧のインライン更新は行単位で pending / error を持つ | 失敗しないので状態が要らない |
 
@@ -178,11 +178,11 @@ api/  zod スキーマ  →  openapi.yaml  →  web/src/generated/
 |---|---|
 | `api` のルート定義 | zod スキーマ（`api/src/schemas.ts`） |
 | `pnpm --filter api openapi` | `api/openapi.yaml` |
-| `pnpm --filter web codegen` | `web/src/generated/`。orval が型・fetch クライアント・hook を生成 |
+| `pnpm --filter web codegen` | `web/src/generated/`。orval が型とエンドポイントごとの fetch 関数を生成 |
 
 ルートの `pnpm openapi` が 2 つを続けて実行する。生成の設定は [tech-stack.md §3](tech-stack.md) にある。
 
-生成した型を **`apis/` の外に出さない。** `apis/functions/` と `apis/hooks/` が `apis/mappers/` を通し、
+生成した型を **`apis/` の外に出さない。** `apis/functions/` が `apis/mappers/` を通し、
 生成型からドメイン型・フォームの値の型へ変換してから返す。この境界を持つことが目的なので、
 省略すると分離した意味が無くなる。生成型を import するのは `apis/` の中だけ。
 
@@ -203,26 +203,28 @@ mapper と型の境界という論点が消える。
 
 ## 7. 通信経路
 
-既定の経路は Server Component と Server Action。クライアント取得は
-`XxxClientContainer` の構成を試す画面だけで使い、**直接叩く形と BFF を挟む形の両方**を見せる。
+取得は Server Component、更新は Server Action。**`api` を叩くのはサーバーだけ**で、
+ブラウザから叩く画面は持たない ([tech-stack.md §4](tech-stack.md))。
 
 | 経路 | 用途 |
 |---|---|
-| Server Component → `api` | 画面の取得。既定 |
-| Server Action → `api` | 作成・更新・削除。既定 |
-| Client Component → `api` | クライアント取得を試す画面。ブラウザから直接叩く |
-| Client Component → `web/app/api/` → `api` | 同上。Route Handler を BFF として挟む |
+| Server Component → `api` | 画面の取得 |
+| Server Action → `api` | 作成・更新・削除 |
+| Client Component → `api` | 使っていない。base URL は mutator が `NEXT_PUBLIC_API_BASE_URL` で持っている |
+| Client Component → `web/app/api/` → `api` | 使っていない。Route Handler は置いていない |
 
-3つ目と4つ目を並べることで、**BFF を挟むと何が変わるか**を比べられる。
-直接叩く形はブラウザに `api` の URL と CORS が露出し、BFF を挟む形は `web` 側に
-中継のコードが増える。どちらを既定にするかは判断の対象なので、両方を実物にしておく。
+下 2 つは、ブラウザだけで完結する取得が要るようになったときの選択肢として残してある。
+並べれば **BFF を挟むと何が変わるか**を比べられる。直接叩く形はブラウザに `api` の URL と CORS が露出し、
+BFF を挟む形は `web` 側に中継のコードが増える。
 
-ブラウザから直接叩くために、`api` に Hono の `cors()` middleware を置き、
-`http://localhost:3000` からのリクエストを許す。BFF だけなら不要だった設定で、
-直接叩く経路のコストとして見える箇所になる。
+`api` には Hono の `cors()` middleware を置き、`http://localhost:3000` からのリクエストを許してある。
+サーバーからしか叩かない今は無くても動くが、ブラウザから直接叩く経路を試すときに要る設定で、
+その経路のコストとして見える箇所になる。
 
 更新後は Server Action の中で `revalidatePath` を呼ぶ。
 **呼び忘れると一覧が古いまま残る**ので、その状態も含めて確認できる。
+本の更新は `/books` と `/books/[bookId]` だけでなく `/dashboard` にも映るので、
+1 つの更新で再検証するパスは複数になる。
 
 ---
 

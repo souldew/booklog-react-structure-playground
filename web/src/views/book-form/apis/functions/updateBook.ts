@@ -38,5 +38,6 @@ export async function updateBook(
   // 一覧と詳細の両方に反映する。
   revalidatePath(routes.books());
   revalidatePath(routes.bookDetail(bookId));
+  revalidatePath(routes.dashboard());
   redirect(routes.bookDetail(bookId));
 }

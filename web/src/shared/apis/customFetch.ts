@@ -34,7 +34,8 @@ export async function customFetch<T>(url: string, options: CustomFetchOptions = 
   const response = await fetch(`${baseUrl ?? resolveBaseUrl()}${url}`, init);
   const data = response.status === 204 ? undefined : await response.json();
 
-  // 4xx / 5xx は throw する。TanStack Query の isError と、Server Action の catch がこれを受ける。
+  // 4xx / 5xx は throw する。Server Component からの取得はルートの error.tsx が、
+  // Server Action からの更新はその中の catch が受ける。
   if (!response.ok) {
     throw new ApiError(response.status, data);
   }

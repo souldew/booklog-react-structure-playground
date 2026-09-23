@@ -1,6 +1,6 @@
 import { defineConfig } from "orval";
 
-// api の openapi.yaml から、型・fetch クライアント・TanStack Query の hook を生成する。
+// api の openapi.yaml から、型と fetch クライアントを生成する。
 // 生成物は src/generated/ に置き、Presentational には渡さない (docs/tech-stack.md §3)。
 export default defineConfig({
   booklog: {
@@ -11,7 +11,9 @@ export default defineConfig({
       target: "./src/generated/api.ts",
       schemas: "./src/generated/model",
       mode: "tags-split",
-      client: "react-query",
+      // 取得はすべてサーバー (Server Component / Server Action) で行うので、hook は生成しない。
+      // 生成されるのはエンドポイントごとの関数だけで、entities の apis/functions がそれを包む。
+      client: "fetch",
       httpClient: "fetch",
       clean: true,
       override: {
@@ -19,13 +21,6 @@ export default defineConfig({
         mutator: {
           path: "./src/shared/apis/customFetch.ts",
           name: "customFetch",
-        },
-        // hook は既定のまま。GET は useQuery、それ以外は useMutation になる。
-        // query.useQuery / useMutation を明示的に true にすると全メソッドに両方が生えるので触らない。
-        // useSuspenseQuery を true にすると、GET に useXxxSuspense (useSuspenseQuery 版) が並んで生える。
-        // Suspense 境界の中で使う ClientContainer はこちらを呼ぶ (docs/tech-stack.md §4)。
-        query: {
-          useSuspenseQuery: true,
         },
       },
     },

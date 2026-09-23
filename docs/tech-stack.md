@@ -26,7 +26,6 @@
 | DB | — | SQLite (`node:sqlite`)。ORM なし |
 | UI | shadcn/ui + Tailwind CSS | — |
 | 状態 | React Context | — |
-| クライアント取得 | TanStack Query | — |
 | 型生成 | orval | OpenAPI の出力元 |
 | フォーム | ライブラリを使わない | — |
 | story | Storybook | — |
@@ -41,16 +40,13 @@
 | 決めたこと | 内容 |
 |---|---|
 | 生成物の置き場 | `web/src/generated/`。git 管理外にはしない |
-| 生成型の扱い | `apis/` の中だけで import する。`apis/functions/` と `apis/hooks/` が mapper を通してドメイン型で返し、Container 以降は生成型を知らない |
-| 生成する対象 | 型・fetch クライアント・TanStack Query の hook |
+| 生成型の扱い | `apis/` の中だけで import する。`apis/functions/` が mapper を通してドメイン型で返し、Container 以降は生成型を知らない |
+| 生成する対象 | 型と fetch クライアント。hook は生成しない (`client: "fetch"`) |
 | HTTP クライアント | orval の `mutator` で差し替えた fetch。`web/src/shared/apis/customFetch.ts` |
 | 設定 | `web/orval.config.ts`。`mode: tags-split` で tag ごとにファイルを分ける |
-| hook の生成 | orval の既定に任せる。GET が `useQuery`、それ以外が `useMutation` |
+| hook を生成しない理由 | 取得も更新もサーバー (Server Component / Server Action) で行うため、ブラウザで呼ぶ hook に用が無い。`client: "react-query"` にすると全 GET に hook が生え、使わないものが増える |
 
-`override.query` の `useQuery` / `useMutation` を明示的に `true` にすると、
-全メソッドに両方の hook が生えて GET に `useMutation` が付く。既定のままにしておく。
-
-### 生成した hook と通信経路の整合
+### 生成したクライアントと通信経路の整合
 
 通信経路は 3 種類ある（[backend.md §7](backend.md)）。生成した hook を書き換えずに
 全部で使えるように、**mutator で base URL を切り替える**。
@@ -62,52 +58,74 @@
 | ブラウザ、BFF を試す Container | `/api` | `web/app/api/` の Route Handler が `api` へ中継 |
 
 mutator はサーバーかブラウザかを実行時に判定して上 2 つを選ぶ。
-3 つ目は、その Container だけが生成された hook の `request` オプションで上書きする。
+3 つ目は、その Container だけが生成された関数の `request` オプションで上書きする。
 
 ```ts
-useListBooks(params, { request: { baseUrl: "/api" } });
+listBooks(params, { baseUrl: "/api" });
 ```
 
 mutator は 4xx / 5xx を `ApiError` として throw する。生成型の union には 404 の分岐もあるが、
-TanStack Query の `isError` と Server Action の `catch` で受けるほうが素直なので、そちらに寄せる。
+Server Component の error.tsx と Server Action の `catch` で受けるほうが素直なので、そちらに寄せる。
 
 Route Handler はパスをそのまま `api` に渡すだけの中継にする。
-OpenAPI 上のパスと BFF のパスが一致するので、生成した hook は 3 経路で共通になる。
+OpenAPI 上のパスと BFF のパスが一致するので、生成したクライアントは 3 経路で共通になる。
 
 ### 生成型の境界は apis の出口
 
-生成した型と hook を import してよいのは、views・features・entities の `apis/` の中だけ。
-**境界は `apis/` の出口に引く。** `apis/functions/` と `apis/hooks/` が `apis/mappers/` を通して
+生成した型とクライアントを import してよいのは、views・features・entities の `apis/` の中だけ。
+**境界は `apis/` の出口に引く。** `apis/functions/` が `apis/mappers/` を通して
 ドメイン型に変換して返し、Container も Presentational も生成型を知らない。
 サブディレクトリの役割は [directory-conventions.md](directory-conventions.md) の「apis の内側」にある。
 
 ```
-generated/ の型・hook ──> apis/functions ── apis/mappers ──> Container ──> Presentational
-generated/ の hook    ──> apis/hooks     ── apis/mappers ──> ClientContainer ──> Presentational
+generated/ の型・関数 ──> apis/functions ── apis/mappers ──> Container ──> Presentational
 ```
 
 | 層 | 生成型 |
 |---|---|
-| `apis/functions/` `apis/hooks/` | 触ってよい。mapper を呼ぶ場所 |
+| `apis/functions/` | 触ってよい。mapper を呼ぶ場所 |
 | `apis/mappers/` | 型だけ触る。純粋関数 |
-| Container / ClientContainer | **触らない。** `apis/` からドメイン型を受け取る |
+| Container | **触らない。** `apis/` からドメイン型を受け取る |
 | Presentational / Skeleton | **触らない。** props はドメイン型とフォームの値の型だけ |
 
 Presentational が生成型を持たないのは、story で API の型を知らずに済ませるためと、
 API スキーマの変更を mapper で止めるため。Container まで生成型を知らなくできるのは、
-生成 hook を `apis/hooks/` で包む層があるため。この層が無いと ClientContainer が生成 hook を
+生成した関数を `apis/functions/` で包む層があるため。この層が無いと Container が生成関数を
 直接呼ぶしかなく、境界を Presentational の手前まで後退させることになる。
 
 ---
 
-## 4. クライアント取得: TanStack Query
+## 4. 取得の経路: すべてサーバー
 
-`XxxClientContainer` からの取得・更新にだけ使う。既定の経路は Server Component と
-Server Action なので、**QueryClientProvider は必要になった画面の層でマウントする**。
-アプリ全体に置くことになったら、Provider の合成は `src/app/providers/` に置き、`web/app/layout.tsx` からマウントする。
-アプリ全体には置かない。
+**取得は Server Component、更新は Server Action。** ブラウザから `api` を叩く経路は使わない。
+クライアント取得のライブラリ (TanStack Query、SWR) は入れていない。
 
----
+| 決めたこと | 内容 |
+|---|---|
+| 取得 | `apis/functions/` の `fetchXxx` を Server Component の Container から `await` する。`apis/hooks/` は作らない |
+| 境界 | 画面の Container が `<Suspense fallback={<XxxSkeleton />}>` を置き、取得する Container をスロットに注入する。境界の位置は画面の都合なので、取得する側ではなく置く側が決める |
+| 並列 | 同じパネルの中で複数取るときは `Promise.all`。パネルどうしは Suspense が分かれているので、遅いパネルが速いパネルを待たせない |
+| エラー | `apis/` が `ApiError` を throw し、ルートの `error.tsx` が受ける。`app/books/error.tsx` と `app/dashboard/error.tsx` にあり、`reset` で再試行する |
+| 更新後 | Server Action の `revalidatePath` で、その更新が映る画面を再検証する。呼び忘れると古いまま残る ([backend.md §7](backend.md)) |
+
+### クライアント取得を入れなかった理由
+
+`/dashboard` は当初 TanStack Query で組んでいた。他の画面と同じ「パネルごとの境界」を
+クライアント取得で作ると何が変わるかを比べるためだったが、次の順で畳んだ。
+
+| 段階 | 分かったこと |
+|---|---|
+| クライアントだけで取る | `useSuspenseQuery` を SSR で動かすとサーバーとブラウザで 2 回取る。防ぐには prerender を止める部品が要り、HTML から中身が消える |
+| prerender を止める | Next の SPA ガイドが挙げる形ではあるが、SSR を捨てる判断になる。この画面だけ HTML に中身が無くなる |
+| サーバーで prefetch して `HydrationBoundary` で渡す | 二重取得は消え、HTML にも中身が入る。ただし Server Component で `await` するのと結果が変わらない |
+
+最後の形まで来ると、TanStack Query が担っているのは「サーバーで取った値をブラウザのキャッシュに置く」ことだけになる。
+このアプリはブラウザ側で再取得も楽観更新もせず、更新はすべて Server Action と `revalidatePath` で回るので、
+そのキャッシュに用が無い。Provider・境界・`apis/hooks/`・生成 hook がまるごと不要になるため、外した。
+
+**入れ直す条件**は、ブラウザだけで完結する取得が要るとき。
+入力に応じた検索、ポーリング、無限スクロール、楽観更新のように、
+サーバーへの往復で画面を作り直すのが重いものが出てきたら、その画面にだけ入れる。
 
 ## 5. フォーム
 
@@ -268,5 +286,5 @@ mapper の変換の正しさは `apis/mappers/` のテストの仕事で、関�
 - 4 関数・9 テストの規模では、msw と `@faker-js/faker` の依存、生成物 6 ファイル、`setupServer` の起動と後始末が見合わない
 - 1 関数 1 通信の規則があるので、msw の強みであるパスでの振り分けを使う場面がない
 
-msw に移る条件は、`apis/hooks/` を単体テストすると決めたとき。TanStack Query は 1 テストで複数のパスに再取得を飛ばすので、
-順番のキューでは読めなくなる。その時点で hooks 用の jsdom project と合わせて入れる。hooks をテストしないと決めるなら、この先も要らない。
+msw に移る条件は、ブラウザで取得する部品を持ち込み、それを story やテストで動かすと決めたとき。
+今は取得がすべてサーバーにあり、story に届くのはドメイン型の props だけなので、通信を偽装する場所が無い (§4)。

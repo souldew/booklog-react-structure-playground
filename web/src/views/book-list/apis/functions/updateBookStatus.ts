@@ -20,5 +20,7 @@ export async function updateBookStatus(bookId: string, status: BookStatus): Prom
 
   // これを呼び忘れると一覧が古いまま残る (docs/backend.md §7)。
   revalidatePath(routes.books());
+  // ダッシュボードの「読書中」と統計もこの更新で変わる。
+  revalidatePath(routes.dashboard());
   return { ok: true };
 }

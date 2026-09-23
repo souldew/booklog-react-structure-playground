@@ -42,5 +42,6 @@ export async function updateBookNote(
 
   revalidatePath(routes.bookDetail(bookId));
   revalidatePath(routes.bookNotes(bookId));
+  revalidatePath(routes.dashboard());
   redirect(routes.bookNotes(bookId));
 }

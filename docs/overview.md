@@ -55,7 +55,7 @@ API と DB の構成は [backend.md](backend.md) にある。
 | 1 | `/books` `/books/[bookId]` | list / detail、絞り込み Provider、インライン更新 |
 | 2 | `/books/new` `/books/[bookId]/edit` | form の共有と、組み立て層に出る差 |
 | 3 | `/books/[bookId]/notes` `/books/[bookId]/progress` | 複数形と単数形の対比 |
-| 4 | `/dashboard` | 複数の Suspense 境界、パネルが使う取得と型の `entities/` への集約 |
+| 4 | `/dashboard` | パネルごとの境界、複数ドメインの横断、取得と型の `entities/` への集約 |
 | 5 | `/settings/*` | タブ分割、レイアウトの責務 |
 
 段階 2 が主目的。段階 1 はその前提を整えるためにある。

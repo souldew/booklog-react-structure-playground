@@ -39,5 +39,6 @@ export async function updateBookProgress(
 
   // 進捗は詳細から辿るので詳細へ戻る。redirect は throw で抜けるので try の外に置く。
   revalidatePath(routes.bookDetail(bookId));
+  revalidatePath(routes.dashboard());
   redirect(routes.bookDetail(bookId));
 }

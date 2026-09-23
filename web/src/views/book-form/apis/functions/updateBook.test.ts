@@ -61,6 +61,7 @@ describe("updateBook", () => {
     ]);
     expect(revalidatePath).toHaveBeenCalledWith("/books");
     expect(revalidatePath).toHaveBeenCalledWith("/books/3");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
     expect(redirect).toHaveBeenCalledWith("/books/3");
   });
 

@@ -5,29 +5,6 @@
  * 読書管理デモの API。web からは Server Component / Server Action / ブラウザの 3 経路で呼ばれる。
  * OpenAPI spec version: 0.1.0
  */
-import {
-  queryOptions as queryOptionsBuilder,
-  useMutation,
-  useQuery,
-  useSuspenseQuery
-} from '@tanstack/react-query';
-import type {
-  DataTag,
-  DefinedInitialDataOptions,
-  DefinedUseQueryResult,
-  MutationFunction,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UndefinedInitialDataOptions,
-  UseMutationOptions,
-  UseMutationResult,
-  UseQueryOptions,
-  UseQueryResult,
-  UseSuspenseQueryOptions,
-  UseSuspenseQueryResult
-} from '@tanstack/react-query';
-
 import type {
   BookNote,
   BookNoteCreate,
@@ -36,26 +13,6 @@ import type {
 } from '../model';
 
 import { customFetch } from '../../shared/apis/customFetch';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
-
-const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K };
-  for (const key of Object.keys(query)) {
-    // The explicit queryKey always wins, matching the previous
-    // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue;
-    Object.defineProperty(result, key, {
-      enumerable: true,
-      configurable: true,
-      get: () => (query as Record<string, unknown>)[key],
-    });
-  }
-  return result;
-};
 
 export type listBookNotesResponse200 = {
   data: BookNote[]
@@ -94,132 +51,6 @@ export const listBookNotes = async (bookId: string, options?: Parameters<typeof 
 
   }
 );}
-
-
-
-
-
-export const getListBookNotesQueryKey = (bookId: string,) => {
-    return [
-    `/books/${bookId}/notes`
-    ] as const;
-    }
-
-
-export const getListBookNotesQueryOptions = <TData = Awaited<ReturnType<typeof listBookNotes>>, TError = ErrorResponse>(bookId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBookNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListBookNotesQueryKey(bookId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBookNotes>>> = ({ signal }) => listBookNotes(bookId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: bookId !== null && bookId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBookNotes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ListBookNotesQueryResult = NonNullable<Awaited<ReturnType<typeof listBookNotes>>>
-export type ListBookNotesQueryError = ErrorResponse
-
-
-export function useListBookNotes<TData = Awaited<ReturnType<typeof listBookNotes>>, TError = ErrorResponse>(
- bookId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBookNotes>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listBookNotes>>,
-          TError,
-          Awaited<ReturnType<typeof listBookNotes>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListBookNotes<TData = Awaited<ReturnType<typeof listBookNotes>>, TError = ErrorResponse>(
- bookId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBookNotes>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listBookNotes>>,
-          TError,
-          Awaited<ReturnType<typeof listBookNotes>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListBookNotes<TData = Awaited<ReturnType<typeof listBookNotes>>, TError = ErrorResponse>(
- bookId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBookNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useListBookNotes<TData = Awaited<ReturnType<typeof listBookNotes>>, TError = ErrorResponse>(
- bookId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBookNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getListBookNotesQueryOptions(bookId,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export const getListBookNotesSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof listBookNotes>>, TError = ErrorResponse>(bookId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listBookNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListBookNotesQueryKey(bookId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBookNotes>>> = ({ signal }) => listBookNotes(bookId, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listBookNotes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
-}
-
-export type ListBookNotesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listBookNotes>>>
-export type ListBookNotesSuspenseQueryError = ErrorResponse
-
-
-export function useListBookNotesSuspense<TData = Awaited<ReturnType<typeof listBookNotes>>, TError = ErrorResponse>(
- bookId: string, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listBookNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListBookNotesSuspense<TData = Awaited<ReturnType<typeof listBookNotes>>, TError = ErrorResponse>(
- bookId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listBookNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListBookNotesSuspense<TData = Awaited<ReturnType<typeof listBookNotes>>, TError = ErrorResponse>(
- bookId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listBookNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useListBookNotesSuspense<TData = Awaited<ReturnType<typeof listBookNotes>>, TError = ErrorResponse>(
- bookId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listBookNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getListBookNotesSuspenseQueryOptions(bookId,options)
-
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 export type createBookNoteResponse201 = {
@@ -276,54 +107,7 @@ return customFetch<createBookNoteResponse>(getCreateBookNoteUrl(bookId),
 );}
 
 
-
-
-
-export const getCreateBookNoteMutationKey = () => ['createBookNote'] as const;
-
-export const getCreateBookNoteMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBookNote>>, TError,CreateBookNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createBookNote>>, TError,CreateBookNoteMutationVariables, TContext> => {
-
-const mutationKey = getCreateBookNoteMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBookNote>>, CreateBookNoteMutationVariables> = (props) => {
-          const {bookId,data} = props ?? {};
-
-          return  createBookNote(bookId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateBookNoteMutationResult = NonNullable<Awaited<ReturnType<typeof createBookNote>>>
-    export type CreateBookNoteMutationBody = BookNoteCreate
-    export type CreateBookNoteMutationError = ErrorResponse
-    export type CreateBookNoteMutationVariables = {bookId: string;data: BookNoteCreate}
-
-    export const useCreateBookNote = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBookNote>>, TError,CreateBookNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createBookNote>>,
-        TError,
-        CreateBookNoteMutationVariables,
-        TContext
-      > => {
-      return useMutation(getCreateBookNoteMutationOptions(options), queryClient);
-    }
-    export type updateBookNoteResponse200 = {
+export type updateBookNoteResponse200 = {
   data: BookNote
   status: 200
 }
@@ -379,54 +163,7 @@ return customFetch<updateBookNoteResponse>(getUpdateBookNoteUrl(bookId,noteId),
 );}
 
 
-
-
-
-export const getUpdateBookNoteMutationKey = () => ['updateBookNote'] as const;
-
-export const getUpdateBookNoteMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBookNote>>, TError,UpdateBookNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateBookNote>>, TError,UpdateBookNoteMutationVariables, TContext> => {
-
-const mutationKey = getUpdateBookNoteMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateBookNote>>, UpdateBookNoteMutationVariables> = (props) => {
-          const {bookId,noteId,data} = props ?? {};
-
-          return  updateBookNote(bookId,noteId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateBookNoteMutationResult = NonNullable<Awaited<ReturnType<typeof updateBookNote>>>
-    export type UpdateBookNoteMutationBody = BookNoteUpdate
-    export type UpdateBookNoteMutationError = ErrorResponse
-    export type UpdateBookNoteMutationVariables = {bookId: string;noteId: string;data: BookNoteUpdate}
-
-    export const useUpdateBookNote = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBookNote>>, TError,UpdateBookNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateBookNote>>,
-        TError,
-        UpdateBookNoteMutationVariables,
-        TContext
-      > => {
-      return useMutation(getUpdateBookNoteMutationOptions(options), queryClient);
-    }
-    export type deleteBookNoteResponse204 = {
+export type deleteBookNoteResponse204 = {
   data: void
   status: 204
 }
@@ -467,50 +204,3 @@ export const deleteBookNote = async (bookId: string,
 );}
 
 
-
-
-
-export const getDeleteBookNoteMutationKey = () => ['deleteBookNote'] as const;
-
-export const getDeleteBookNoteMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteBookNote>>, TError,DeleteBookNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteBookNote>>, TError,DeleteBookNoteMutationVariables, TContext> => {
-
-const mutationKey = getDeleteBookNoteMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteBookNote>>, DeleteBookNoteMutationVariables> = (props) => {
-          const {bookId,noteId} = props ?? {};
-
-          return  deleteBookNote(bookId,noteId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteBookNoteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteBookNote>>>
-
-    export type DeleteBookNoteMutationError = ErrorResponse
-    export type DeleteBookNoteMutationVariables = {bookId: string;noteId: string}
-
-    export const useDeleteBookNote = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteBookNote>>, TError,DeleteBookNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteBookNote>>,
-        TError,
-        DeleteBookNoteMutationVariables,
-        TContext
-      > => {
-      return useMutation(getDeleteBookNoteMutationOptions(options), queryClient);
-    }

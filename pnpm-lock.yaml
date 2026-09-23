@@ -48,9 +48,6 @@ importers:
       '@base-ui/react':
         specifier: ^1.8.0
         version: 1.8.0(@types/react@19.3.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tanstack/react-query':
-        specifier: ^5.103.2
-        version: 5.103.2(react@19.2.8)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -5130,12 +5127,14 @@ snapshots:
       postcss: 8.5.28
       tailwindcss: 4.3.3
 
-  '@tanstack/query-core@5.103.2': {}
+  '@tanstack/query-core@5.103.2':
+    optional: true
 
   '@tanstack/react-query@5.103.2(react@19.2.8)':
     dependencies:
       '@tanstack/query-core': 5.103.2
       react: 19.2.8
+    optional: true
 
   '@testing-library/dom@10.4.2':
     dependencies:

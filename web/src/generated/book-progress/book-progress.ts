@@ -5,29 +5,6 @@
  * 読書管理デモの API。web からは Server Component / Server Action / ブラウザの 3 経路で呼ばれる。
  * OpenAPI spec version: 0.1.0
  */
-import {
-  queryOptions as queryOptionsBuilder,
-  useMutation,
-  useQuery,
-  useSuspenseQuery
-} from '@tanstack/react-query';
-import type {
-  DataTag,
-  DefinedInitialDataOptions,
-  DefinedUseQueryResult,
-  MutationFunction,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UndefinedInitialDataOptions,
-  UseMutationOptions,
-  UseMutationResult,
-  UseQueryOptions,
-  UseQueryResult,
-  UseSuspenseQueryOptions,
-  UseSuspenseQueryResult
-} from '@tanstack/react-query';
-
 import type {
   BookProgress,
   BookProgressUpdate,
@@ -35,26 +12,6 @@ import type {
 } from '../model';
 
 import { customFetch } from '../../shared/apis/customFetch';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
-
-const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
-  const result = { queryKey } as T & { queryKey: K };
-  for (const key of Object.keys(query)) {
-    // The explicit queryKey always wins, matching the previous
-    // `{ ...query, queryKey }` spread where it was set last.
-    if (key === 'queryKey') continue;
-    Object.defineProperty(result, key, {
-      enumerable: true,
-      configurable: true,
-      get: () => (query as Record<string, unknown>)[key],
-    });
-  }
-  return result;
-};
 
 export type getBookProgressResponse200 = {
   data: BookProgress
@@ -93,132 +50,6 @@ export const getBookProgress = async (bookId: string, options?: Parameters<typeo
 
   }
 );}
-
-
-
-
-
-export const getGetBookProgressQueryKey = (bookId: string,) => {
-    return [
-    `/books/${bookId}/progress`
-    ] as const;
-    }
-
-
-export const getGetBookProgressQueryOptions = <TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(bookId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetBookProgressQueryKey(bookId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBookProgress>>> = ({ signal }) => getBookProgress(bookId, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: bookId !== null && bookId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type GetBookProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getBookProgress>>>
-export type GetBookProgressQueryError = ErrorResponse
-
-
-export function useGetBookProgress<TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(
- bookId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getBookProgress>>,
-          TError,
-          Awaited<ReturnType<typeof getBookProgress>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetBookProgress<TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(
- bookId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getBookProgress>>,
-          TError,
-          Awaited<ReturnType<typeof getBookProgress>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetBookProgress<TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(
- bookId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useGetBookProgress<TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(
- bookId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getGetBookProgressQueryOptions(bookId,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export const getGetBookProgressSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(bookId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetBookProgressQueryKey(bookId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBookProgress>>> = ({ signal }) => getBookProgress(bookId, { signal, ...requestOptions });
-
-
-
-
-
-   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
-}
-
-export type GetBookProgressSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getBookProgress>>>
-export type GetBookProgressSuspenseQueryError = ErrorResponse
-
-
-export function useGetBookProgressSuspense<TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(
- bookId: string, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetBookProgressSuspense<TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(
- bookId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetBookProgressSuspense<TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(
- bookId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useGetBookProgressSuspense<TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(
- bookId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
- ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getGetBookProgressSuspenseQueryOptions(bookId,options)
-
-  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
 
 
 export type updateBookProgressResponse200 = {
@@ -275,50 +106,3 @@ return customFetch<updateBookProgressResponse>(getUpdateBookProgressUrl(bookId),
 );}
 
 
-
-
-
-export const getUpdateBookProgressMutationKey = () => ['updateBookProgress'] as const;
-
-export const getUpdateBookProgressMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBookProgress>>, TError,UpdateBookProgressMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateBookProgress>>, TError,UpdateBookProgressMutationVariables, TContext> => {
-
-const mutationKey = getUpdateBookProgressMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateBookProgress>>, UpdateBookProgressMutationVariables> = (props) => {
-          const {bookId,data} = props ?? {};
-
-          return  updateBookProgress(bookId,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type UpdateBookProgressMutationResult = NonNullable<Awaited<ReturnType<typeof updateBookProgress>>>
-    export type UpdateBookProgressMutationBody = BookProgressUpdate
-    export type UpdateBookProgressMutationError = ErrorResponse
-    export type UpdateBookProgressMutationVariables = {bookId: string;data: BookProgressUpdate}
-
-    export const useUpdateBookProgress = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBookProgress>>, TError,UpdateBookProgressMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof updateBookProgress>>,
-        TError,
-        UpdateBookProgressMutationVariables,
-        TContext
-      > => {
-      return useMutation(getUpdateBookProgressMutationOptions(options), queryClient);
-    }

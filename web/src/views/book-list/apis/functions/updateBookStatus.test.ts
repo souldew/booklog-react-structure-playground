@@ -31,6 +31,7 @@ describe("updateBookStatus", () => {
     expect(result).toEqual({ ok: true });
     expect(requests).toEqual([{ method: "PATCH", path: "/books/2", body: { status: "on_hold" } }]);
     expect(revalidatePath).toHaveBeenCalledWith("/books");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
   });
 
   it("失敗は throw せず値で返し、再検証もしない", async () => {

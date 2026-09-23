@@ -53,6 +53,7 @@ describe("createBookNote", () => {
     ]);
     expect(revalidatePath).toHaveBeenCalledWith("/books/2");
     expect(revalidatePath).toHaveBeenCalledWith("/books/2/notes");
+    expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
     expect(redirect).toHaveBeenCalledWith("/books/2/notes");
   });
 
