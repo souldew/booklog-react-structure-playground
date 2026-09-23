@@ -136,7 +136,7 @@ components:
           minimum: 0
       required:
         - current_page
-    MonthlyStat:
+    BookReadingStat:
       type: object
       properties:
         month:
@@ -445,7 +445,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/MonthlyStat"
+                  $ref: "#/components/schemas/BookReadingStat"
   /notes/recent:
     get:
       tags:

@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface MonthlyStat {
+export interface BookReadingStat {
   /** YYYY-MM */
   month: string;
   books_added: number;

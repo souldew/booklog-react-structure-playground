@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  queryOptions as queryOptionsBuilder,
   useMutation,
-  useQuery
+  useQuery,
+  useSuspenseQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
@@ -21,7 +23,9 @@ import type {
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
-  UseQueryResult
+  UseQueryResult,
+  UseSuspenseQueryOptions,
+  UseSuspenseQueryResult
 } from '@tanstack/react-query';
 
 import type {
@@ -156,6 +160,58 @@ export function useGetBookProgress<TData = Awaited<ReturnType<typeof getBookProg
   const queryOptions = getGetBookProgressQueryOptions(bookId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetBookProgressSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(bookId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBookProgressQueryKey(bookId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBookProgress>>> = ({ signal }) => getBookProgress(bookId, { signal, ...requestOptions });
+
+
+
+
+
+   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type GetBookProgressSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getBookProgress>>>
+export type GetBookProgressSuspenseQueryError = ErrorResponse
+
+
+export function useGetBookProgressSuspense<TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(
+ bookId: string, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBookProgressSuspense<TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(
+ bookId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBookProgressSuspense<TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(
+ bookId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetBookProgressSuspense<TData = Awaited<ReturnType<typeof getBookProgress>>, TError = ErrorResponse>(
+ bookId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getBookProgress>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBookProgressSuspenseQueryOptions(bookId,options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }

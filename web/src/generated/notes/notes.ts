@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
-  useQuery
+  queryOptions as queryOptionsBuilder,
+  useQuery,
+  useSuspenseQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
@@ -17,7 +19,9 @@ import type {
   QueryKey,
   UndefinedInitialDataOptions,
   UseQueryOptions,
-  UseQueryResult
+  UseQueryResult,
+  UseSuspenseQueryOptions,
+  UseSuspenseQueryResult
 } from '@tanstack/react-query';
 
 import type {
@@ -151,6 +155,58 @@ export function useListRecentNotes<TData = Awaited<ReturnType<typeof listRecentN
   const queryOptions = getListRecentNotesQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getListRecentNotesSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(params?: ListRecentNotesParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRecentNotesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRecentNotes>>> = ({ signal }) => listRecentNotes(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  queryOptionsBuilder({ queryKey, ...queryOptions, queryFn: queryOptions?.queryFn ?? queryFn}) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type ListRecentNotesSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listRecentNotes>>>
+export type ListRecentNotesSuspenseQueryError = unknown
+
+
+export function useListRecentNotesSuspense<TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(
+ params: undefined |  ListRecentNotesParams, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListRecentNotesSuspense<TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(
+ params?: ListRecentNotesParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListRecentNotesSuspense<TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(
+ params?: ListRecentNotesParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListRecentNotesSuspense<TData = Awaited<ReturnType<typeof listRecentNotes>>, TError = unknown>(
+ params?: ListRecentNotesParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRecentNotes>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListRecentNotesSuspenseQueryOptions(params,options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }

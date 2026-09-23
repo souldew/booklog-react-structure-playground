@@ -2,7 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 
 import { getDb } from "../../db/client.ts";
 import { createApp } from "../lib/createApp.ts";
-import { MonthlyStatSchema } from "../schemas.ts";
+import { BookReadingStatSchema } from "../schemas.ts";
 
 const tags = ["stats"];
 const MONTH_COUNT = 6;
@@ -15,7 +15,7 @@ const getMonthlyStats = createRoute({
   responses: {
     200: {
       description: "直近 6 か月の月別統計。新しい月が先。データの無い月も 0 で含む",
-      content: { "application/json": { schema: z.array(MonthlyStatSchema) } },
+      content: { "application/json": { schema: z.array(BookReadingStatSchema) } },
     },
   },
 });
@@ -55,5 +55,5 @@ export const stats = createApp().openapi(getMonthlyStats, (c) => {
     notes_written: notes.get(month)?.count ?? 0,
   }));
 
-  return c.json(z.array(MonthlyStatSchema).parse(result), 200);
+  return c.json(z.array(BookReadingStatSchema).parse(result), 200);
 });

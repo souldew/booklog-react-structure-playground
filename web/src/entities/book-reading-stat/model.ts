@@ -1,6 +1,6 @@
 // 統計ドメインの model。本やメモから導いた集計値で、それ自体は更新しない (読み取り専用)。
 
-export type MonthlyStat = {
+export type BookReadingStat = {
   /** YYYY-MM */
   month: string;
   /** その月に登録した本の冊数 */

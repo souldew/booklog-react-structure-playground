@@ -22,6 +22,11 @@ export default defineConfig({
         },
         // hook は既定のまま。GET は useQuery、それ以外は useMutation になる。
         // query.useQuery / useMutation を明示的に true にすると全メソッドに両方が生えるので触らない。
+        // useSuspenseQuery を true にすると、GET に useXxxSuspense (useSuspenseQuery 版) が並んで生える。
+        // Suspense 境界の中で使う ClientContainer はこちらを呼ぶ (docs/tech-stack.md §4)。
+        query: {
+          useSuspenseQuery: true,
+        },
       },
     },
   },
