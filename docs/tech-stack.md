@@ -104,6 +104,7 @@ API スキーマの変更を mapper で止めるため。Container まで生成�
 
 `XxxClientContainer` からの取得・更新にだけ使う。既定の経路は Server Component と
 Server Action なので、**QueryClientProvider は必要になった画面の層でマウントする**。
+アプリ全体に置くことになったら、Provider の合成は `src/app/providers/` に置き、`web/app/layout.tsx` からマウントする。
 アプリ全体には置かない。
 
 ---

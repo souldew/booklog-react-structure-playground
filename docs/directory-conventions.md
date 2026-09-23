@@ -8,6 +8,9 @@ Feature-Sliced Design (FSD) をベースに、業務ドメインのレベルで�
 - React で、データ取得を伴う画面を持つアプリ
 - ルーティングは Next.js App Router と React Router のどちらでも成立する。違いは `app/` の結線の書き方だけ
 - アプリケーションコードは `src/` に置き、`@/` が `src/` を指す alias を持つ
+- ルーターの規約ディレクトリ (Next.js の `app/`) は **`src/` の外** に置き、`src/app/` は FSD の app 層として使う。
+  Next は `web/app/` があると `src/app` をルーティングに使わないので、両方を置いても競合しない
+  (経緯と同居案との比較は [structure-notes.md §6](structure-notes.md))
 - shadcn/ui のように「コードをコピーしてくる」ライブラリを使う
 
 ---
@@ -17,8 +20,11 @@ Feature-Sliced Design (FSD) をベースに、業務ドメインのレベルで�
 import は次の向きにだけ許す。
 
 ```
-app > views > widgets > features > entities > shared > components/ui
+web/app (ルーターの規約) > src/app (FSD の app 層) > views > widgets > features > entities > shared > components/ui
 ```
+
+`web/app` はルーターの規約ファイルだけを置く場所で、FSD の層ではない。`src/app` を呼ぶ側であり、`src/app` から `web/app` を
+import することは無い。以下で単に `app` と書くときは FSD の app 層 (`src/app`) を指す。
 
 同じディレクトリ内のトップの兄弟同士では import しない。
 たとえば `features/user` と `features/book` があるとき、user 側で book を import しない。
@@ -27,7 +33,8 @@ entities だけは例外で、兄弟同士の import を許容する (後述)。
 
 | 層 | 置くもの |
 |---|---|
-| `app/` | ルーティングに接続するだけの薄い層 |
+| `web/app/` (ルーターの規約) | `page.tsx` `layout.tsx` `error.tsx` などの規約ファイル。結線だけで、マークアップもロジックも書かない |
+| `app/` (`src/app/`) | アプリ全体を組み立てるもの。画面をまたぐ枠 (`layouts/`)、グローバル CSS (`styles/`)、アプリ全体の Provider の合成 (`providers/`) |
 | `views/{domain}-{detail}-{suffix}/` | 1 画面。URL に対応する |
 | `widgets/{name}/` | 複数のドメインを合成するもの。基本は使わない |
 | `features/{domain}/` | 業務ドメイン単位。同じドメインの複数の view で使うもの |
@@ -35,35 +42,48 @@ entities だけは例外で、兄弟同士の import を許容する (後述)。
 | `shared/` | 業務ドメインを持たない部品 |
 | `components/ui/` | shadcn CLI が生成したコード |
 
-必須なのは `app/` と `views/` だけ。他の層は該当物が出るまで作らない。
+必須なのは `web/app/` と `views/` だけ。他の層は該当物が出るまで作らない (`src/app/` も segment ごとに同じ)。
 画面が数枚のうちは views だけで済み、共有が出た時点で features や shared を足す。
 
 ---
 
 ## 2. 各層
 
-### app
+### ルーターの規約ディレクトリ (`web/app/`) と app 層 (`src/app/`)
 
-URL と画面を結線し、アプリ全体を初期化するだけの薄い層。マークアップもロジックも書かない。
-置くのはエントリ、ルート定義、アプリ全体の Provider のマウント、グローバル CSS の 4 つ。
+FSD の app 層は「アプリを動かすためのものすべて。ルーティング、エントリポイント、グローバルスタイル、プロバイダ」を置く層で、
+どの画面にも属さず、アプリの起動時に 1 回だけ組み立てるものが入る。このプロジェクトではこれを 2 つの場所に分ける。
 
-ルートから画面へは `<XxxPageContainer />` を 1 行呼ぶだけにし、URL パラメータはここで解決して
-素の値を渡す。Provider のマウント位置は、生かしたい寿命 (アプリ全体 / セクション / 画面) に合わせて決める。
+| 場所 | 置くもの | 書かないもの |
+|---|---|---|
+| `web/app/` | ルーターの規約ファイル (`page.tsx` `layout.tsx` `error.tsx` `not-found.tsx` など)。URL と画面の結線、URL パラメータの解決、Provider と枠のマウント、`next/font` とメタデータ | マークアップとロジック。`error.tsx` のように規約上マークアップが要るものは、shared の部品を呼ぶだけにする |
+| `src/app/` | `layouts/` (画面をまたぐ枠。ヘッダー + `<main>`)、`styles/` (グローバル CSS)、`providers/` (アプリ全体の Provider の合成。出るまで作らない) | 画面の中身、部品、ドメインの状態 |
+
+分ける理由は、ルーターの規約ディレクトリでは「特別なファイル名しか置けない」「フォルダ名が URL に見える」という制約が掛かり、
+`layouts/` `providers/` のような segment を素直に置けないため。FSD 公式の Next.js 統合ガイドが挙げる 2 案のうち、
+規約ディレクトリを外に出すほうを採っている ([structure-notes.md §6](structure-notes.md))。
+
+**app 層に入らないもの** の見分け方は「部品か、部品を組み立てる側か」。Button や `FormField` は全画面で使うが部品なので shared。
+`BookFilterProvider` はドメインの状態でセクション寿命なので features に定義し、`web/app/books/layout.tsx` でマウントするだけ。
+`routes.ts` (パス関数) はルーティングの設定ではなく URL を組む部品なので shared。
+
+`web/app/` からは `<XxxPageContainer />` を 1 行呼ぶだけにし、URL パラメータはここで解決して素の値を渡す。
+Provider のマウント位置は、生かしたい寿命 (アプリ全体 / セクション / 画面) に合わせて決める。
 
 | ルーター | 結線の書き方 |
 |---|---|
-| Next.js App Router | `app/{segment}/page.tsx` が 1 ルート。`layout.tsx` がセクション寿命の Provider の置き場 |
-| React Router (library mode) | `app/routes.tsx` にルート定義を書き、`element` に Container を渡す。`children` を持つ layout route がセクション寿命の Provider の置き場 |
-| React Router (framework mode) | `app/routes/*.tsx` の route module が 1 ルート。default export は Container を返すだけ、`loader` / `action` は `apis/` に委譲するだけにする。`app/` の場所は `appDirectory` で `src/app` に向ける |
+| Next.js App Router | `web/app/{segment}/page.tsx` が 1 ルート。`layout.tsx` がセクション寿命の Provider の置き場。Root Layout は `src/app/layouts/AppLayout` と `src/app/styles/globals.css` を呼ぶ |
+| React Router (library mode) | 規約ディレクトリが無いので `src/app/` がルート定義と起点も持つ。`src/app/routes/routes.tsx` にルート定義を書き、`element` に Container を渡す。`children` を持つ layout route がセクション寿命の Provider の置き場。起点は `src/app/entrypoint/main.tsx` |
+| React Router (framework mode) | `app/routes/*.tsx` の route module が 1 ルート。default export は Container を返すだけ、`loader` / `action` は `apis/` に委譲するだけにする。Next と同じく規約ディレクトリは `src/` の外に置き、`src/app/` と分ける |
 
 ```tsx
-// Next.js: app/users/[id]/page.tsx
+// Next.js: web/app/users/[id]/page.tsx
 export default async function Page({ params }: PageProps<'/users/[id]'>) {
   const { id } = await params
   return <UserDetailPageContainer id={id} />
 }
 
-// React Router (library mode): app/routes.tsx
+// React Router (library mode): src/app/routes/routes.tsx
 { path: '/users/:id', element: <UserDetailPageContainer /> }
 ```
 
@@ -98,7 +118,11 @@ new と edit を 1 つの view で受ける場合は `UserNewPageContainer` `Use
 Container を分け、`pages/` にフラットに並べる。
 
 `layouts/` の置き場は他のコンポーネントと同じ基準で決める。
-その view でしか使わないなら views、同じドメインの複数の view で使うなら features。
+その view でしか使わないなら views、同じドメインの複数の view で使うなら features、ドメインを持たないなら shared。
+ただし **画面をまたいで残る枠** (ヘッダー + `<main>` のように、URL が変わっても再マウントされず Page の外側にあるもの) は
+どの Page にも属さないので app 層 (`src/app/layouts/`)。Page が自分の中身として描く枠状の部品 (`FormPageLayout` のように
+`title` や `backHref` を Page から受けるもの) は「複数の画面で使う部品」であって枠ではないので、shared に置く。
+判別は「Page がそれを返しているか (部品)、Page がその中に描かれているか (枠)」。
 
 層の名前を `pages/` にしないのは、Next.js が `src/pages/` を Pages Router として拾うため。
 

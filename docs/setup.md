@@ -434,7 +434,7 @@ api の `current_page` が 300 になる。`/books/1/notes/999/edit` は not-fou
 | 置き場 | 置いたもの |
 |---|---|
 | `shared/components/GlobalNav/` | リンクの一覧 (`NAV_LINKS`) と現在地の強調。`usePathname` を読むので `"use client"`。story は `/books`、`/books/2` (下の階層でも現在地)、ナビに無いパスの 3 つで、`aria-current="page"` の有無を play で見る |
-| `shared/layouts/AppLayout/` | ヘッダー + `<main>` の骨格。`children` を受ける。story は `fullscreen` で、body と同じ `flex-col` の decorator に包む |
+| `shared/layouts/AppLayout/` | ヘッダー + `<main>` の骨格。`children` を受ける。story は `fullscreen` で、body と同じ `flex-col` の decorator に包む。§13 で `src/app/layouts/` へ移した |
 | `app/layout.tsx` | html / body、フォント、globals.css、`<AppLayout>` を呼ぶだけになった |
 | `.storybook/preview.tsx` | `parameters.nextjs.appDirectory: true`。`next/navigation` を story で差し替えるのに要る |
 
@@ -452,6 +452,46 @@ pnpm --filter web test              # 54 files / 134 tests
 pnpm --filter web typecheck
 pnpm lint
 pnpm format:check
+```
+
+---
+
+## 13. Next の `app` を `src/` の外に出し、`src/app` を FSD の app 層にする
+
+コードは動かしただけで、中身は変えていない。判断と比較は [structure-notes.md §6](structure-notes.md)、規則は
+[directory-conventions.md](directory-conventions.md) の app の節にある。
+
+```bash
+cd web
+git mv src/app app                                        # Next の規約ファイルを src の外へ
+git mv src/shared/layouts/AppLayout src/app/layouts/AppLayout
+git mv app/globals.css src/app/styles/globals.css
+```
+
+| 追従した参照 | 変更 |
+|---|---|
+| `web/app/layout.tsx` | `@/app/layouts/AppLayout/AppLayout` と `@/app/styles/globals.css` を import |
+| `.storybook/preview.tsx` | globals.css の import 先を `../src/app/styles/globals.css` に |
+| `components.json` | shadcn の `css` を `src/app/styles/globals.css` に |
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| ルートの `app` と `src/app` を両方置いてよいか | Next 16 の src Folder の文書に「`app` がルートにあれば `src/app` は無視される」とある。丸ごと移せば競合しない。`node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/src-folder.md` |
+| `@/` からの import は変わるか | 変わらない。`@/` は `src/` を指し、`web/app` のファイルは元から `@/views/...` で import していた |
+| Tailwind の設定 | v4 は CSS 側で設定するので、`globals.css` の場所を変えても設定ファイルの書き換えは無い。`@import "tailwindcss"` がそのまま効く |
+| CSS を `@/` alias で import できるか | できる。`web/app/layout.tsx` の `import "@/app/styles/globals.css"` で dev サーバーがスタイルを配信することを確認した |
+| `.next/` の型 (`PageProps`) | `next typegen` を再実行すれば `web/app` から生成される。古い `.next/` は消してから確認した |
+
+### 確認
+
+```bash
+pnpm --filter web test              # 54 files / 134 tests
+pnpm --filter web typecheck
+pnpm lint
+pnpm format:check
+API_DELAY=0 pnpm dev                # 全 URL が 200、CSS が当たり、ヘッダーの aria-current が出ることを curl で確認
 ```
 
 ---

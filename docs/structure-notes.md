@@ -35,7 +35,7 @@ gamification という画面は無い。
 | 中身 | 置き場 |
 |---|---|
 | どの行動に感謝するか、何回目で特別な文言か、といったルールと型 | `features/gamification/model.ts` |
-| サンクス表示の状態 | `features/gamification/providers/ThanksProvider.tsx`。寿命はアプリ全体なので `app/layout.tsx` にマウント |
+| サンクス表示の状態 | `features/gamification/providers/ThanksProvider.tsx`。寿命はアプリ全体なので `src/app/providers/` で合成し `web/app/layout.tsx` からマウント |
 | トーストの見た目 | `features/gamification/components/ThanksToast/` |
 | 記録する処理 | `features/gamification/apis/functions/` か、通信が無ければ `lib/` |
 
@@ -55,7 +55,7 @@ gamification が `features/book` の `Book` 型を import すると兄弟 import
 ### 構成とは別の難所
 
 `createBook` は成功すると詳細へ `redirect` するので、フォーム側の `useActionState` の状態は消える。
-サンクスを詳細で出すには、Server Action で一時的な cookie を置いて `app/layout.tsx` の Server Component が読んで消す (flash) か、
+サンクスを詳細で出すには、Server Action で一時的な cookie を置いて `web/app/layout.tsx` の Server Component が読んで消す (flash) か、
 `redirect("/books/7?thanks=book")` のようにクエリで運ぶか、のどちらかが要る。ディレクトリ構成ではなく Next の遷移の仕組みの話で、
 どの案でも同じだけかかる。
 
@@ -132,17 +132,21 @@ features に置くと、`/dashboard` `/books` `/settings/profile` へのリン�
 `redirect` `revalidatePath` もヘッダーもここから取る (確定済み。規則は conventions の shared の節)。
 ドメインの slice (features) がリンクを出すときも、URL の形を書かずにこの関数を呼ぶ。`BookNoteList` の編集リンクが最初の例。
 
-### shared 版の構成 (現状)
+### 現状の構成
 
-`app/layout.tsx` は html / body、フォント、globals.css だけを持ち、マークアップは shared に出してある
-(app の節の「マークアップもロジックも書かない」に沿う形)。
+Next の Root Layout (`web/app/layout.tsx`) は html / body、フォント、メタデータだけを持ち、枠は app 層、ナビの部品は shared にある。
 
 ```
-app/layout.tsx                          html / body、フォント、globals.css、<AppLayout> を呼ぶだけ
-shared/layouts/AppLayout/               ヘッダー + <main> の骨格。children を受け取る。story あり
+web/app/layout.tsx                      html / body、フォント、メタデータ。<AppLayout> と globals.css を呼ぶだけ
+src/app/layouts/AppLayout/              ヘッダー + <main> の骨格 (画面をまたぐ枠)。children を受け取る。story あり
+src/app/styles/globals.css              グローバル CSS
 shared/components/GlobalNav/            リンクの一覧 (NAV_LINKS)。usePathname で現在地を強調 ("use client")。story あり
 shared/routes/routes.ts                 パス関数。ナビのリンク先もここから取る
 ```
+
+`AppLayout` は最初 `shared/layouts/` に置いていたが、Page の外側にあって URL が変わっても残る「枠」であり、
+FSD が `app/layouts` に置くものそのものなので、app 層を `src/app` に作った時点 (§6) で移した。
+`GlobalNav` は枠の中に置かれる「部品」なので shared のまま。
 
 現在地の判定は `GlobalNav` の中にある。`/books` のリンクは `/books/2` のような下の階層でも現在地とし、`/` だけは完全一致にする。
 強調は `aria-current="page"` と文字色で、story の play は `aria-current` で判定を見る。
@@ -152,21 +156,23 @@ shared/routes/routes.ts                 パス関数。ナビのリンク先も�
 
 ### widgets に移す場合の構成
 
-ユーザー情報を載せるとき。`AppLayout` は shared なので widgets を import できず、ヘッダーの中身をスロットで受ける形に変える。
+ユーザー情報を載せるとき。`AppLayout` は app 層にあり widgets を import できるので、ヘッダーの中身を widgets に置き換えるだけで済む。
+`web/app/layout.tsx` は変わらない。
 
 ```
-app/layout.tsx                                        <AppLayout header={<Suspense fallback={<GlobalHeaderSkeleton />}><GlobalHeaderContainer /></Suspense>}>
+web/app/layout.tsx                                    変えない
+src/app/layouts/AppLayout/                            <header><Suspense fallback={<GlobalHeaderSkeleton />}><GlobalHeaderContainer /></Suspense></header><main>…
 widgets/global-header/components/GlobalHeader/        Presentational。shared の GlobalNav と entities の UserAvatar を合成
 widgets/global-header/components/GlobalHeader/GlobalHeaderContainer.tsx   fetchCurrentUser して GlobalHeader へ
 widgets/global-header/components/GlobalHeaderSkeleton/
 entities/user/                                        User 型、fetchCurrentUser、UserAvatar
-shared/layouts/AppLayout/                             header をスロットで受ける
 shared/components/GlobalNav/                          変えない
 ```
 
-import の向きは `app > widgets > entities > shared` の一方向で、shared の `GlobalNav` と `AppLayout` は widgets の存在を知らない。
+import の向きは `app > widgets > entities > shared` の一方向で、shared の `GlobalNav` は widgets の存在を知らない。
+`AppLayout` が shared にあった間は widgets を import できず header をスロットで受ける必要があったが、app 層に移したことで不要になった。
 将来 `features/book-note` の未読件数を足すときも `GlobalHeader` が並べるだけで、`GlobalNav` は変わらない。
-静的なリンクだけの間は shared 版のままにし、データが要る部品が出た時点でこの形に移す。
+静的なリンクだけの間は現状のままにし、データが要る部品が出た時点でこの形に移す。
 段階 4 (`/dashboard`) と段階 5 (`/settings`) でナビに足すのは `GlobalNav` の `NAV_LINKS` への 1 行ずつ。
 
 ---
@@ -214,3 +220,46 @@ Server Action は 6 本になった。
 
 分けるなら今が機械的に済む最後の機会で、段階 4 (`/dashboard`) は取得だけなので Server Action は増えず、段階 5 (`/settings`) で 2 本増える。
 現状は分けずに据え置き。
+
+---
+
+## 6. app 層を FSD の原義に寄せる (確定済み)
+
+規則は conventions の「ルーターの規約ディレクトリ (`web/app/`) と app 層 (`src/app/`)」の節にある。ここには比較と経緯を残す。
+
+### なぜ変えたか
+
+FSD の App 層は「アプリを動かすためのものすべて。routing、entrypoint、global styles、providers」で、
+`app/layouts` `app/providers` のようにマークアップや合成も持つ。以前の規則 (app は結線だけ、マークアップは shared へ) は
+そこから意図的に狭めたもので、FSD を知る人には `app/providers` `app/layouts` が無いことが引っかかる。
+また `AppLayout` (画面をまたぐ枠) を shared に置くと widgets を import できず、ヘッダーにデータを載せるときにスロット化の一手間が要った。
+
+### 同居と分離
+
+Next.js の `app` ディレクトリはルーティングの規約で、FSD の App 層とは別物。FSD 公式の Next.js 統合ガイドは 2 案を認めている。
+
+| | 同居 (`src/app` 1 つ) | 分離 (`web/app` + `src/app`) **← 採用** |
+|---|---|---|
+| 形 | `src/app/` に `page.tsx` `books/*` と `_layouts/` `_providers/` `_styles/` を並べる。FSD の segment は Next の private folder (`_` 始まり) にしてルーティングから外す | `web/app/` に規約ファイルだけ、`src/app/` に FSD の segment だけ |
+| 読みやすさ | URL ツリーと FSD の segment が混ざる。`_` で見分ける | Next の規約と FSD の層が物理的に分かれる。`web/app` を見れば URL ツリーだけ |
+| 制約 | segment の中に `page.tsx` `layout.tsx` `route.ts` などの名前を置けない | 無し。`app` という名前のディレクトリが 2 箇所になる |
+| Next の仕様 | 既定の形 | ルートに `app` があると `src/app` は無視される (Next 16 の src Folder の文書に明記)。競合しない |
+
+分離を選んだのは、「`web/app` は結線だけ、`src/app` は組み立てを持つ」という役割の差を場所で表せるため。
+
+### 移したもの
+
+| 前 | 後 | 追従した参照 |
+|---|---|---|
+| `web/src/app/**` (Next の規約ファイル) | `web/app/**` | 無し (`@/` は `src/` のままなので import は変わらない) |
+| `shared/layouts/AppLayout/` | `src/app/layouts/AppLayout/` | `web/app/layout.tsx` |
+| `web/app/globals.css` | `src/app/styles/globals.css` | `web/app/layout.tsx`、`.storybook/preview.tsx`、`components.json` |
+
+移さなかったもの: `FormPageLayout` (Page が中身として描く部品。FSD でも shared)、`GlobalNav` `FormField` (部品)、
+`BookFilterProvider` (ドメインの状態でセクション寿命。features)、`routes.ts` (URL を組む部品。shared)、
+`next/font` とメタデータ (Next 固有なので Root Layout に残す)。`providers/` はアプリ全体の Provider が出るまで作らない。
+
+### React Router のとき
+
+library mode では規約ディレクトリが無いので `src/app/` がルート定義 (`routes/`) と起点 (`entrypoint/`) も持ち、`web/app` に当たるものは無い。
+framework mode は Remix 系のファイルベースで、Next と同じく規約ディレクトリを `src/` の外に置いて分ける。
