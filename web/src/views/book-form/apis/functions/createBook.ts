@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 
 import { toBook } from "@/features/book/apis/mappers/toBook";
 import { createBook as postBook } from "@/generated/books/books";
+import { hasFieldErrors } from "@/shared/lib/fieldErrors";
 
-import { hasFieldErrors, parseBookForm } from "../../lib/parseBookForm";
+import { parseBookForm } from "../../lib/parseBookForm";
 import type { BookFormState } from "../../model";
 import { toBookCreate } from "../mappers/toBookCreate";
 

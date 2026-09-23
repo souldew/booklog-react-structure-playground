@@ -1,13 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { EMPTY_BOOK_FORM_VALUES } from "../model";
-import { hasFieldErrors, parseBookForm } from "./parseBookForm";
+import { formDataOf } from "@/shared/fixtures/formDataOf";
+import { hasFieldErrors } from "@/shared/lib/fieldErrors";
 
-function formDataOf(entries: Record<string, string>): FormData {
-  const formData = new FormData();
-  for (const [name, value] of Object.entries(entries)) formData.set(name, value);
-  return formData;
-}
+import { EMPTY_BOOK_FORM_VALUES } from "../model";
+import { parseBookForm } from "./parseBookForm";
 
 describe("parseBookForm", () => {
   it("前後の空白を落とし、値とエラー無しを返す", () => {

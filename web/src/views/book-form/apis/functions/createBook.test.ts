@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Book as BookResponse } from "@/generated/model";
+import { formDataOf } from "@/shared/fixtures/formDataOf";
 import { stubFetch } from "@/shared/fixtures/stubFetch";
 
 import { EMPTY_BOOK_FORM_VALUES, type BookFormState } from "../../model";
@@ -13,12 +14,6 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
 const initialState: BookFormState = { values: EMPTY_BOOK_FORM_VALUES, fieldErrors: {} };
-
-function formDataOf(entries: Record<string, string>): FormData {
-  const formData = new FormData();
-  for (const [name, value] of Object.entries(entries)) formData.set(name, value);
-  return formData;
-}
 
 const created: BookResponse = {
   id: 42,

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Book as BookResponse } from "@/generated/model";
+import { formDataOf } from "@/shared/fixtures/formDataOf";
 import { stubFetch } from "@/shared/fixtures/stubFetch";
 
 import type { BookFormState } from "../../model";
@@ -21,12 +22,6 @@ const editingState: BookFormState = {
   },
   fieldErrors: {},
 };
-
-function formDataOf(entries: Record<string, string>): FormData {
-  const formData = new FormData();
-  for (const [name, value] of Object.entries(entries)) formData.set(name, value);
-  return formData;
-}
 
 const updated: BookResponse = {
   id: 3,

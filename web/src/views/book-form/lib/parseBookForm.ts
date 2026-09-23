@@ -1,6 +1,5 @@
-import { z } from "zod";
-
 import type { BookStatus } from "@/features/book/model";
+import { firstFieldErrors } from "@/shared/lib/fieldErrors";
 
 import { type BookFormFieldErrors, BookFormSchema, type BookFormValues } from "../model";
 
@@ -42,15 +41,6 @@ export function parseBookForm(formData: FormData, previous: BookFormValues): Par
   }
 
   // 項目ごとに最初のメッセージだけを出す。値は入力したまま (前後の空白だけ落として) 返す。
-  // 項目の一覧はスキーマから取る (keyof)。Object.keys だとキーの型が string に落ちる。
-  // メッセージの無い項目はキーごと作らない。hasFieldErrors がキーの数で判定するため。
-  const flattened = z.flattenError(result.error).fieldErrors;
-  const fieldErrors: BookFormFieldErrors = {};
-  for (const field of BookFormSchema.keyof().options) {
-    const message = flattened[field]?.[0];
-    if (message) fieldErrors[field] = message;
-  }
-
   return {
     values: {
       title: raw.title.trim(),
@@ -59,10 +49,6 @@ export function parseBookForm(formData: FormData, previous: BookFormValues): Par
       status: previous.status,
     },
     submittedStatus: undefined,
-    fieldErrors,
+    fieldErrors: firstFieldErrors(BookFormSchema, result.error),
   };
-}
-
-export function hasFieldErrors(fieldErrors: BookFormFieldErrors): boolean {
-  return Object.keys(fieldErrors).length > 0;
 }

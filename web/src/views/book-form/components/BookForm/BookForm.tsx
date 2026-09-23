@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { BOOK_STATUS_LABELS } from "@/features/book/constants";
 import { BOOK_STATUSES } from "@/features/book/model";
+import { FormField } from "@/shared/components/FormField/FormField";
 
 import type { BookFormAction, BookFormValues } from "../../model";
-import { BookFormField } from "./BookFormField";
 
 type Props = {
   /** Server Action。story では fn() で差し替える */
@@ -34,7 +34,7 @@ export function BookForm({ action, defaultValues, statusLocked = false, submitLa
   // こちらのメッセージが出ないため。min はスピナーの下限としてだけ残す。
   return (
     <form action={formAction} noValidate className="max-w-md space-y-4">
-      <BookFormField id="title" label="タイトル" error={fieldErrors.title}>
+      <FormField id="title" label="タイトル" error={fieldErrors.title}>
         <Input
           id="title"
           name="title"
@@ -42,9 +42,9 @@ export function BookForm({ action, defaultValues, statusLocked = false, submitLa
           aria-invalid={fieldErrors.title ? true : undefined}
           aria-describedby={fieldErrors.title ? "title-error" : undefined}
         />
-      </BookFormField>
+      </FormField>
 
-      <BookFormField id="author" label="著者" error={fieldErrors.author}>
+      <FormField id="author" label="著者" error={fieldErrors.author}>
         <Input
           id="author"
           name="author"
@@ -52,9 +52,9 @@ export function BookForm({ action, defaultValues, statusLocked = false, submitLa
           aria-invalid={fieldErrors.author ? true : undefined}
           aria-describedby={fieldErrors.author ? "author-error" : undefined}
         />
-      </BookFormField>
+      </FormField>
 
-      <BookFormField id="totalPages" label="ページ数" error={fieldErrors.totalPages}>
+      <FormField id="totalPages" label="ページ数" error={fieldErrors.totalPages}>
         <Input
           id="totalPages"
           name="totalPages"
@@ -66,9 +66,9 @@ export function BookForm({ action, defaultValues, statusLocked = false, submitLa
           aria-invalid={fieldErrors.totalPages ? true : undefined}
           aria-describedby={fieldErrors.totalPages ? "totalPages-error" : undefined}
         />
-      </BookFormField>
+      </FormField>
 
-      <BookFormField
+      <FormField
         id="status"
         label="状態"
         error={fieldErrors.status}
@@ -86,7 +86,7 @@ export function BookForm({ action, defaultValues, statusLocked = false, submitLa
             </NativeSelectOption>
           ))}
         </NativeSelect>
-      </BookFormField>
+      </FormField>
 
       {message && (
         <p role="alert" className="text-sm text-destructive">

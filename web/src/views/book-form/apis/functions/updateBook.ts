@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 
 import { updateBook as patchBook } from "@/generated/books/books";
 import { ApiError } from "@/shared/apis/customFetch";
+import { hasFieldErrors } from "@/shared/lib/fieldErrors";
 
-import { hasFieldErrors, parseBookForm } from "../../lib/parseBookForm";
+import { parseBookForm } from "../../lib/parseBookForm";
 import type { BookFormState } from "../../model";
 import { toBookUpdate } from "../mappers/toBookUpdate";
 
