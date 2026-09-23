@@ -17,3 +17,6 @@ export * from './bookStatus';
 export * from './bookUpdate';
 export * from './errorResponse';
 export * from './listBooksParams';
+export * from './listRecentNotesParams';
+export * from './monthlyStat';
+export * from './recentBookNote';

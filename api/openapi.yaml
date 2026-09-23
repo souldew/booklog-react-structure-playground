@@ -136,6 +136,33 @@ components:
           minimum: 0
       required:
         - current_page
+    MonthlyStat:
+      type: object
+      properties:
+        month:
+          type: string
+          description: YYYY-MM
+          example: 2026-09
+        books_added:
+          type: integer
+        pages_added:
+          type: integer
+        notes_written:
+          type: integer
+      required:
+        - month
+        - books_added
+        - pages_added
+        - notes_written
+    RecentBookNote:
+      allOf:
+        - $ref: "#/components/schemas/BookNote"
+        - type: object
+          properties:
+            book_title:
+              type: string
+          required:
+            - book_title
   parameters: {}
 paths:
   /books:
@@ -405,4 +432,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /stats/monthly:
+    get:
+      tags:
+        - stats
+      operationId: getMonthlyStats
+      responses:
+        "200":
+          description: 直近 6 か月の月別統計。新しい月が先。データの無い月も 0 で含む
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MonthlyStat"
+  /notes/recent:
+    get:
+      tags:
+        - notes
+      operationId: listRecentNotes
+      parameters:
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            description: 件数。既定は 5
+            example: 5
+          required: false
+          description: 件数。既定は 5
+          name: limit
+          in: query
+      responses:
+        "200":
+          description: 本を横断した最近のメモ。新しい順
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecentBookNote"
 webhooks: {}

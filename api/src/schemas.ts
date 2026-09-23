@@ -82,6 +82,21 @@ export const BookProgressUpdateSchema = z
   })
   .openapi("BookProgressUpdate");
 
+// ダッシュボードの統計。月ごとに、登録した本の冊数と合計ページ数、書いたメモの件数。
+export const MonthlyStatSchema = z
+  .object({
+    month: z.string().openapi({ description: "YYYY-MM", example: "2026-09" }),
+    books_added: z.number().int(),
+    pages_added: z.number().int(),
+    notes_written: z.number().int(),
+  })
+  .openapi("MonthlyStat");
+
+// ダッシュボードの「最近のメモ」。本を横断するので、本のタイトルを載せて返す。
+export const RecentBookNoteSchema = BookNoteSchema.extend({
+  book_title: z.string(),
+}).openapi("RecentBookNote");
+
 export const BookIdParamSchema = z.object({
   bookId: z.string().openapi({ param: { name: "bookId", in: "path" }, example: "1" }),
 });
