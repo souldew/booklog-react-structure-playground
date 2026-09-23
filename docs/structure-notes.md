@@ -128,7 +128,9 @@ features に置くと、`/dashboard` `/books` `/settings/profile` へのリン�
 | ログインユーザーの名前やアバター | widgets。entities の user を合成 |
 | 未読メモの件数バッジ | widgets。features の値を合成 |
 
-パスを 1 箇所にまとめたくなったら `shared/routes/` に `routes.bookDetail(id)` のような関数を置き、views の `Link` とヘッダーの両方が使う。
+パスは `shared/routes/routes.ts` の関数 (`routes.bookDetail(id)` など) にまとめてあり、views の `Link` も Server Action の
+`redirect` `revalidatePath` もヘッダーもここから取る (確定済み。規則は conventions の shared の節)。
+ドメインの slice (features) がリンクを出すときも、URL の形を書かずにこの関数を呼ぶ。`BookNoteList` の編集リンクが最初の例。
 
 ### shared に出す場合の構成
 
@@ -138,7 +140,7 @@ features に置くと、`/dashboard` `/books` `/settings/profile` へのリン�
 app/layout.tsx                          html / body、フォント、globals.css、<AppLayout> を呼ぶだけ
 shared/layouts/AppLayout/               ヘッダー + <main> の骨格。children を受け取る。story あり
 shared/components/GlobalNav/            リンクの一覧。usePathname で現在地を強調 ("use client")。story あり
-shared/routes/routes.ts                 任意。ナビの一覧と views が使うパス関数
+shared/routes/routes.ts                 パス関数 (あり)。ナビの一覧もここから取る
 ```
 
 `GlobalNav` の story は `parameters.nextjs.navigation.pathname` で現在地を切り替える。
@@ -190,3 +192,22 @@ views/book-list/actions/updateBookStatus.ts  features の updateBook → revalid
 | 規則との整合 | `actions/` は生成型に触らない (ラッパーがドメイン型で返す) ので、「`@/generated` は `apis/` の中だけ」はそのまま保てる |
 | コスト | カテゴリが 1 つ増える。directory-conventions の `apis/functions/` の「Server Action もここ」を書き換え、既存 3 本を移す |
 | 判断の時期 | 段階 3 (`book-note-form` `book-progress-form`) で Server Action が 5、6 本になったとき。いまの 3 本ではどちらでも破綻しない |
+
+### 段階 3 の時点
+
+Server Action は 6 本になった。
+
+| 置き場 | Server Action | 叩くエンドポイント | 画面の都合 |
+|---|---|---|---|
+| `views/book-list/apis/functions/` | `updateBookStatus` | `PATCH /books/:id` | `revalidatePath("/books")` |
+| `views/book-form/apis/functions/` | `createBook` `updateBook` | `POST /books` `PATCH /books/:id` | 検証、`revalidatePath` × 2、`redirect` |
+| `views/book-note-form/apis/functions/` | `createBookNote` `updateBookNote` | `POST /books/:id/notes` `PATCH /books/:id/notes/:noteId` | 検証、`revalidatePath` × 2、`redirect` |
+| `views/book-progress-form/apis/functions/` | `updateBookProgress` | `PUT /books/:id/progress` | 検証、`revalidatePath`、`redirect` |
+
+重複しているのは `PATCH /books/:id` を `updateBookStatus` と `updateBook` が別々に呼ぶ 1 箇所だけで、段階 2 から変わっていない。
+段階 3 で足した 3 本はそれぞれ別のエンドポイントで、ラッパーを features に置いても呼ぶのは Server Action 1 本ずつになる。
+つまり「重複が消える」効用はまだ 1 箇所分しかなく、増えたのは「`apis/functions/` に通信だけの関数と画面の都合を持つ関数が同居する」件数のほう
+(`fetchXxx` 4 本、Server Action 6 本)。
+
+分けるなら今が機械的に済む最後の機会で、段階 4 (`/dashboard`) は取得だけなので Server Action は増えず、段階 5 (`/settings`) で 2 本増える。
+現状は分けずに据え置き。

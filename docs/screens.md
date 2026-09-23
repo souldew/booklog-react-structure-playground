@@ -154,9 +154,17 @@ Book と 1:N。コレクションにする根拠。
 | `/books/[bookId]` | 本の見出し | 書誌情報 / メモ一覧（**別々の境界**） |
 | `/books/new` | 全部 | **なし** |
 | `/books/[bookId]/edit` | フォームの枠 | フィールド |
+| `/books/[bookId]/notes` | 見出し・追加リンク | メモの一覧 |
+| `/books/[bookId]/notes/new` | 全部 | **なし** |
+| `/books/[bookId]/notes/[noteId]/edit` | フォームの枠 | フィールド |
+| `/books/[bookId]/progress` | フォームの枠 | フィールド。**作成が無いので常に境界がある** |
 
 `/books/new` と `/books/[bookId]/edit` を並べると、**作成側には Container も Suspense も
 無い**ことが差分として現れる。これが段階 2 の主眼。
+
+`/books/[bookId]/progress` は単一リソースなので new に相当する画面が無く、Container も 1 つだけになる。
+`book-form` `book-note-form` が `pages/` に New と Edit の 2 つの Container を持つのと並べると、
+**複数形と単数形の差が `pages/` のファイル数に出る。** これが段階 3 の主眼。
 
 `/dashboard` はパネルごとに境界を分ける。速いパネルから順に出るので、
 境界の粒度の効果が一番見える画面になる。

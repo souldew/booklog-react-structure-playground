@@ -136,7 +136,10 @@ Header に entities の user 情報を載せるなど、複数のドメインを
 ### features
 
 業務ドメイン単位で区切り、`features/{domain}` にまとめる。
-views の list と detail で同じものを使う、といった場合に置く。
+views の list と detail で同じものを使う、といった場合に置く
+(`BookNoteList` は `book-detail` と `book-note-list` の両方で使うので `features/book-note/components/` にある)。
+view ごとに違う部分 (一覧だけが出す編集リンクなど) は `showEditLink` のような props で切り替える。
+リンク先の URL は文字列で組まず `shared/routes/` の関数から取る (shared の節)。
 `{domain}` は views のフォルダ名の `{domain}` と対応させるのが原則。
 これは命名の指針で、import の条件ではない。view はどの features でも import できる (views の節を参照)。
 
@@ -163,6 +166,12 @@ Button のようなプリミティブから、Dialog のようにプリミティ
 
 作るディレクトリは縛らない。`components/` `hooks/` `lib/` のほか、`routes/` `config/` `apis/` などを
 必要に応じて切る。
+
+画面の URL を組み立てる関数は `shared/routes/routes.ts` に置く (`routes.bookDetail(id)` など。キー名は
+[screens.md §3](screens.md) の view 名に合わせる)。`Link` の `href`、`redirect`、`revalidatePath` に渡すパスは
+文字列で組まず、必ずここから取る。URL の形を知るのは `app/` のルート定義とこのファイルだけになり、
+リンクを書く側 (views、features、app のレイアウト) は id を渡すだけになる。
+これは FSD が shared の segment 例として挙げる `routes` (route constants) と同じ位置づけ。
 
 部品の内側でだけ使う部品や hook は、その部品の下に再帰的に置いてよい。
 
@@ -293,7 +302,7 @@ Container もこの見方では Presentational の付属品で、story を書か
 
 | 付属品の種類 | 置き方 | 例 |
 |---|---|---|
-| 描画の切り出し | 親のディレクトリに置き、ファイル名は親名を頭に付ける | `BookForm/BookFormField.tsx` (ラベルとエラーの枠) |
+| 描画の切り出し | 親のディレクトリに置き、ファイル名は親名を頭に付ける | `BookForm/BookFormField.tsx` (ラベルとエラーの枠)。段階 3 で `BookNoteForm` からも使うようになり、`shared/components/FormField/` に昇格した |
 | hook | 親のディレクトリに置く。slice の `hooks/` には置かない | `BookRow/useBookRowToggle.ts` |
 
 付属品はディレクトリの外から import しない。外から import された時点で付属品ではなくコンポーネント
@@ -331,6 +340,12 @@ mapper は純粋関数だが `@/generated/model` を import するので、ド�
 
 `functions/` は `fetchers` にすると更新系が収まらないので、この名前にしている。
 `hooks/` は最初の ClientContainer ができるまで作らない。
+
+`mappers/` は **生成型 1 つにつき関数 1 つ** にする。作成 (`BookNoteCreate`) と更新 (`BookNoteUpdate`) で送る中身が
+同じでも、`toBookNoteCreate` と `toBookNoteUpdate` に分け、1 つの関数を両方の生成型に流用しない。
+API 側で片方のスキーマだけが変わったとき (作成に必須項目が増える、更新は部分更新のまま、など)、
+影響がその生成型の mapper とテストで止まり、もう片方に波及しないため。中身が同じなのは今そうであるだけで、
+生成型が別である以上、変わり方も別になる。
 
 base URL、ヘッダー、エラーレスポンスの変換など全エンドポイントに共通する部分は `shared/apis/` に置く。
 `shared/apis/` はエンドポイントを持たないので、この 3 分割は適用せずフラットのままでよい。

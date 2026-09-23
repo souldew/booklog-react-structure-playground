@@ -143,6 +143,26 @@ Server Action なので、**QueryClientProvider は必要になった画面の�
 
 `zod-form-data` は FormData を文字列に整える部分だけを担う小さな代替だが、消える行数が少ないので Conform に行くか手書きのままかの二択にする。
 
+### 段階 3 の時点 (判断待ち)
+
+フォームは `BookForm` `BookNoteForm` `BookProgressForm` の 3 つになった。手書きで並んだ定型のうち、
+ドメインを持たない部分は shared に出した。
+
+| 定型 | いまの置き場 |
+|---|---|
+| ラベルとエラーの枠 | `shared/components/FormField/` (元 `BookForm/BookFormField.tsx`) |
+| zod のエラーを 1 項目 1 メッセージに潰す | `shared/lib/fieldErrors.ts` の `firstFieldErrors` `hasFieldErrors` |
+| 戻るリンク + 見出し + フォームの骨格 | `shared/layouts/FormPageLayout/` |
+| `formData.get()` を集めて文字列に整える | 各 view の `lib/parseXxxForm.ts`。フォームごとに 10 行前後 |
+| 入力欄ごとの `defaultValue` `aria-invalid` `aria-describedby` | 各 `XxxForm.tsx`。項目 1 つにつき 3 行 |
+| `XxxFormValues` `XxxFormState` `XxxFormAction` の自作 | 各 view の `model.ts`。フォームごとに 20 行前後 |
+
+Conform を入れると消えるのは下の 3 行で、上の 3 行は shared に出したので Conform でも残る (Conform は UI 部品を持たない)。
+フォームごとの差 (`disabled` な status の引き継ぎ、`totalPages` を受けるスキーマ) は Conform でも `parseWithZod` に渡すスキーマ側に書く。
+
+段階 5 の `/settings/profile` `/settings/notifications` で 5 つになる。入れるならそこが次の区切り。
+
+
 ---
 
 ## 6. lint / formatter

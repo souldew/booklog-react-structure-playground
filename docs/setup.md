@@ -344,6 +344,88 @@ api に `status: reading` で保存される。`/books/7/edit` では状態の s
 
 ---
 
+## 11. 段階 3: `/books/[bookId]/notes` と `/books/[bookId]/progress`
+
+```bash
+cd web
+pnpm dlx shadcn@latest add textarea -y
+```
+
+コードは手で書いた。api 側のエンドポイント (`/books/:bookId/notes` `/books/:bookId/progress`) は段階 0 で作ってあるので、web だけ足した。
+主眼は複数形 (notes = コレクション) と単数形 (progress = 単一リソース) の対比で、差は `app/` と `pages/` のファイル構成に出る。
+
+```
+app/books/[bookId]/
+├── notes/                          複数形
+│   ├── page.tsx                    一覧            → views/book-note-list
+│   ├── new/page.tsx                作成            → views/book-note-form (BookNoteNewFormPageContainer)
+│   └── [noteId]/edit/page.tsx      編集。id が付く → views/book-note-form (BookNoteEditFormPageContainer)
+└── progress/                       単数形
+    └── page.tsx                    編集だけ。id 無し → views/book-progress-form (BookProgressFormPageContainer が 1 つ)
+```
+
+| 置き場 | 置いたもの |
+|---|---|
+| `features/book-progress/` | 新設。`model.ts` (`BookProgress`。独自の id を持たず `bookId` で引く)、`apis/mappers/toBookProgress`、`apis/functions/fetchBookProgress`、`fixtures/` |
+| `features/book-note/components/` | `BookNoteList` と `BookNoteListSkeleton` を `views/book-detail` から移した。詳細とメモ一覧の 2 つの view で使うため。`showEditLink` を足し、一覧では編集リンクを出す。リンク先は `shared/routes` から取る |
+| `views/book-note-list/` | `pages/` だけ。一覧の部品は features のものなので、この view は見出しと追加リンクを置くだけ |
+| `shared/routes/routes.ts` | 画面の URL を組み立てる関数。views の `Link`、Server Action の `redirect` `revalidatePath`、`app/layout.tsx` のナビのベタ書きを全部ここに寄せた |
+| `views/book-note-form/` | `book-form` と同じ形。`model.ts` `lib/parseBookNoteForm` `lib/toBookNoteFormValues` `apis/mappers/toBookNoteCreate` `toBookNoteUpdate` `apis/functions/createBookNote` `updateBookNote`、`components/BookNoteForm/` (+ 編集だけの Container)、`components/BookNoteFormSkeleton/`、`pages/` に Page と New / Edit の 2 つの Container |
+| `views/book-progress-form/` | `model.ts` (スキーマは `totalPages` を受けて作る。上限は業務ルール)、`lib/` `apis/mappers/toBookProgressUpdate` `apis/functions/updateBookProgress`、`components/BookProgressForm/` (Container が `fetchBook` と `fetchBookProgress` を並列に取って合成)、`components/BookProgressFormSkeleton/`、`pages/` に Page と **Container 1 つ** |
+| `shared/components/FormField/` | `BookForm/BookFormField.tsx` を昇格。3 つのフォームから使うため (付属品はディレクトリの外から import しない) |
+| `shared/layouts/FormPageLayout/` | 戻るリンク + 見出し + フォームの骨格。3 つの `XxxFormPage` が同じ形だったので出した。`layouts/` カテゴリの最初の実例 |
+| `shared/lib/fieldErrors.ts` | `firstFieldErrors` (zod のエラーを 1 項目 1 メッセージに潰す) と `hasFieldErrors`。`parseBookForm` からも使うように直した |
+| `shared/fixtures/formDataOf.ts` | テストで FormData を作る helper。3 つのテストファイルに同じものが並んでいたので出した |
+
+Server Action の引数を並べると、URL の差がそのまま出る。
+
+```ts
+createBookNote(bookId, state, formData)                 // 親 id を持つ作成。POST /books/:bookId/notes
+updateBookNote(bookId, noteId, state, formData)         // ネストした編集。   PATCH /books/:bookId/notes/:noteId
+updateBookProgress(bookId, totalPages, state, formData) // 単一リソース。     PUT /books/:bookId/progress。自分の id は無い
+```
+
+### 書いたもの
+
+| 種別 | ファイル |
+|---|---|
+| story | `FormField` (hint / error)、`FormPageLayout`、`BookNoteList` に `WithEditLink` を追加、`BookNoteListPage` (追加と編集のリンク先、Loading、Empty)、`BookNoteForm` (作成・編集・検証エラー・API 失敗)、`BookNoteFormSkeleton`、`BookNoteFormPage` (New / Edit / EditLoading)、`BookProgressForm` (Default・上限超えの検証エラー・API 失敗。New に相当する story は無い)、`BookProgressFormSkeleton`、`BookProgressFormPage` (Default / Loading) |
+| test | `fieldErrors`、`routes` (複数形と単数形のパスの形)、`toBookProgress`、`fetchBookProgress`、`parseBookNoteForm` (0 ページを受け付ける、空白の除去と改行の保持)、`toBookNoteFormValues`、`toBookNoteCreate` `toBookNoteUpdate`、`createBookNote` `updateBookNote` (パスに載る id、`revalidatePath` × 2 と `redirect`、404 と 500)、`parseBookProgressForm` (下限 0 と上限 totalPages の境界)、`toBookProgressFormValues`、`toBookProgressUpdate`、`updateBookProgress` (id 無しのパスに PUT、上限超えは通信しない) |
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| メモの編集画面の初期値をどう取るか。api にメモの単体 GET が無い | メモには詳細画面を作らないので単体 GET も無い ([backend.md §4](backend.md))。`BookNoteFormContainer` は一覧 (`fetchBookNotes`) を取って `noteId` で選ぶ。本が無ければ一覧が `undefined`、メモが無ければ `find` が外れ、どちらも `notFound()`。エンドポイントを足すより「詳細を持たない」判断をそのまま残すほうを選んだ |
+| 進捗の上限 (本のページ数) と現在値 (進捗) が別のエンドポイント | 1 関数の通信は 1 回なので Container で合成する。`BookProgressFormContainer` が `Promise.all` で 2 つを取り、上限は Server Action に `bind` で渡す。スキーマは `createBookProgressFormSchema(totalPages)` と関数にした。上限が本ごとに違うため |
+| `BookFormField` を `BookNoteForm` から import したくなった | 付属品はディレクトリの外から import しない。した時点でコンポーネントなので `shared/components/FormField/` に昇格し、story を書いた。「1 箇所ならベタ書き、2 箇所で昇格」の実例 |
+| `BookNoteList` を `views/book-note-list` からも使いたい | 「同じドメインの複数の view で使うものは features」の実例。`features/book-note/components/` に移し、Container も一緒に移した。一覧だけが出す編集リンクは `showEditLink` で切り替える |
+| features が編集リンクの URL を知ってよいか | 最初は `actions?: (note) => ReactNode` のスロットで view から渡していたが、用途が編集リンク 1 つなので抽象が広すぎた。[structure-notes.md §4](structure-notes.md) の「URL は app の持ち物」を、URL の**形**を `shared/routes/routes.ts` に集める形で実現し、features はその関数を呼ぶことにした。FSD 公式も shared の segment 例に `routes` (route constants) を挙げており、公式チュートリアルでは pages と shared のヘッダーだけがリンクを書く。既存の views と Server Action のベタ書きも全部 `routes` に置き換えた |
+| `BookFormPage` `BookNoteFormPage` `BookProgressFormPage` が同じマークアップ | 骨格を `shared/layouts/FormPageLayout` に出した。各 `XxxFormPage` は [screens.md §3](screens.md) の写像先として名前を持つだけの薄い部品になった。`BookProgressFormPage` は new / edit が無いので `title` `backHref` を props に出さず固定にしてある |
+| 単一リソースのフォームは「新規」が無い | `pages/` に Container が 1 つ、story に `New` が無く `Loading` が必ずある、Presentational に `submitLabel` が無い。book-form の「作成側には Container も Suspense も無い」と逆の差が出る |
+| story の実行中に Base UI が「uncontrolled FieldControl の default value が変わった」と warn する | 送信後に action が返した `values` を `defaultValue` に入れ直す設計 (tech-stack §5) によるもので、段階 2 の `BookForm` でも出ていた。テストは落ちない。放置 |
+| フォームが 3 つになり、tech-stack §5 の「入れ時」が来た | 手書きの定型のうち、ラベルとエラーの枠 (`FormField`) と zod エラーの整形 (`firstFieldErrors`) は shared に出せた。残っているのは `formData.get()` の収集、項目ごとの `aria-*` の付け直し、`XxxFormState` の自作の 3 つで、各フォームに 1 回ずつ。Conform を入れるかの判断は [tech-stack.md §5](tech-stack.md) の表を更新して保留にした |
+| Server Action が 6 本になった | [structure-notes.md §5](structure-notes.md) の「判断の時期」。`actions/` に分ける案は保留にし、現状の本数と重複の箇所を §5 に追記した |
+
+### 確認
+
+```bash
+pnpm --filter web test              # 51 files / 128 tests
+pnpm --filter web typecheck
+pnpm lint
+pnpm format:check
+API_DELAY=0 pnpm dev
+```
+
+ヘッドレスブラウザで次を確かめた。`/books/1/notes/new` を空のまま送ると 2 項目のエラーが出る。ページ 300 と改行入りの本文を入れて送ると
+`/books/1/notes` へ redirect し、api に `page: 300` で保存され、`/books/1` (詳細) にも新しいメモが出る (再検証)。
+一覧の「編集」から `/books/1/notes/5/edit` を開くと初期値が入っており、ページを 301 にして保存すると一覧に戻り api も 301 になる。
+`/books/1/progress` に 999 を入れると「ページ数 (456) 以下で入力してください」が出て通信しない。300 にして保存すると `/books/1` へ戻り、
+api の `current_page` が 300 になる。`/books/1/notes/999/edit` は not-found の UI が出る (段階 1 と同じく HTTP は 200)。
+確認後は `pnpm db:reset` でシードに戻した。
+
+---
+
 ## 未実施
 
 この時点では入れていないもの。それぞれの段階で入れる。
@@ -352,5 +434,8 @@ api に `status: reading` で保存される。`/books/7/edit` では状態の s
 |---|---|
 | `/settings/*` `/stats/monthly` `/notes/recent` のエンドポイント | 段階 4 と 5 |
 | `api` の Vitest (`app.request()`、DB の分離、`API_DELAY=0`) | 未定。web 側のスタブは「web はこう送る」しか担保しないので、契約の反対側として要る |
-| フォームライブラリ Conform (`@conform-to/react` + `@conform-to/zod`) | 段階 3 でフォームが 3 つになったら検討。理由と入れ時は [tech-stack.md §5](tech-stack.md) |
-| Server Action を `apis/functions/` から `actions/` に分ける | 段階 3 で Server Action が 5、6 本になったら検討。理由と分け方は [structure-notes.md §5](structure-notes.md) |
+| フォームライブラリ Conform (`@conform-to/react` + `@conform-to/zod`) | 段階 3 でフォームが 3 つになった。入れるかどうかは判断待ち。現状の残り定型と判断材料は [tech-stack.md §5](tech-stack.md) |
+| Server Action を `apis/functions/` から `actions/` に分ける | 段階 3 で Server Action が 6 本になった。判断待ち。本数と重複の箇所は [structure-notes.md §5](structure-notes.md) |
+| メモの削除 (`DELETE /books/:bookId/notes/:noteId`) | api にはあるが画面は未実装。一覧の行にインライン操作として置くなら `BookRow` の読了トグルと同じ形 (行単位の pending / error) になる |
+| 詳細画面に進捗を出す | 進捗を更新しても詳細には現れない。出すなら `features/book-progress` の部品を 3 つ目の Suspense 境界として `BookDetailPage` に足す。段階 4 のダッシュボードで進捗を出すので、そのときに合わせて考える |
+| ヘッダーを `shared/layouts/AppLayout` に出す | 段階 4 と 5 でナビのリンクが増える前に切る ([structure-notes.md §4](structure-notes.md)) |
