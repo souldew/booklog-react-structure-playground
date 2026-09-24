@@ -5,6 +5,7 @@ import { BookNoteList } from "@/entities/book-note/components/BookNoteList/BookN
 import { BookNoteListSkeleton } from "@/entities/book-note/components/BookNoteListSkeleton/BookNoteListSkeleton";
 import { BOOK_NOTE_FIXTURES } from "@/entities/book-note/fixtures/bookNotes";
 
+import { BookNoteEditLink } from "../components/BookNoteEditLink/BookNoteEditLink";
 import { BookNoteListPage } from "./BookNoteListPage";
 
 // スロットには取得後の Presentational や Skeleton を直接渡す。Container と Suspense は story では使わない。
@@ -12,7 +13,12 @@ const meta = {
   component: BookNoteListPage,
   args: {
     bookId: "2",
-    notes: <BookNoteList notes={BOOK_NOTE_FIXTURES} showEditLink />,
+    notes: (
+      <BookNoteList
+        notes={BOOK_NOTE_FIXTURES}
+        actions={(note) => <BookNoteEditLink note={note} />}
+      />
+    ),
   },
   parameters: {
     slots: { notes: <BookNoteListSkeleton /> },

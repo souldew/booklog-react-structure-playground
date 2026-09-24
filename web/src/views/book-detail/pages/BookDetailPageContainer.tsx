@@ -12,7 +12,7 @@ type Props = {
 };
 
 // 書誌情報 (400ms) とメモ一覧 (200ms) を別々の境界に置く。api の遅延が違うので、出る順番が入れ替わるのが見える。
-// メモ一覧の部品は entities/book-note のもの。詳細では編集リンクを出さないので showEditLink を渡さない。
+// メモ一覧の部品は entities/book-note のもの。詳細では編集リンクを出さないので actions を渡さない。
 export function BookDetailPageContainer({ bookId }: Props) {
   return (
     <BookDetailPage
