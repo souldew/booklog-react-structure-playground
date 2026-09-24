@@ -776,6 +776,39 @@ pnpm format:check
 
 ---
 
+## 19. `BookNoteList` の `showEditLink` を `actions` スロットに戻す
+
+段階 3 で「用途が編集リンク 1 つなので抽象が広すぎた」として `actions?: (note) => ReactNode` を
+`showEditLink` に置き換えたが、FSD に寄せる観点で見直して元の形に戻した。
+決め手は URL ではなく**操作の所有**。`showEditLink` は URL の形こそ `shared/routes` に逃がしていたが、
+「編集という操作がある」「それは一覧の画面でだけ出す」という view の判断を entities が知っている。
+entities は置き場所 (メタ行の右端) だけを決め、そこに何を出すかは view が渡す形にする。
+
+| 置き場 | 内容 |
+|---|---|
+| `entities/book-note/components/BookNoteList/` | `showEditLink` を `actions?: (note: BookNote) => ReactNode` に置き換え。Container は素通し |
+| `views/book-note-list/components/BookNoteEditLink/` | 編集リンク本体。`routes.bookNoteEdit(note.bookId, note.id)` を呼ぶ。story で href を見る |
+| `views/book-note-list/pages/` | PageContainer が `actions={(note) => <BookNoteEditLink note={note} />}` を渡す |
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| render props の代案 | ①`actions: ReactNode` は 1 件ごとに `href` が違うので不可 (view はメモを手に持っていない)。②`Actions: ComponentType<{ note }>` は同等だが、渡せる props が固定され、`bind` した Server Action など描画中に決まる値を閉じ込められない。③map を view に上げて `BookNoteItem` + `actions: ReactNode` のスロットにする形は FSD として一番きれいだが、取得の Container が entities と view で重複する。用途が編集リンク 1 つの現状では render props が最小 |
+| その場に書く関数と再マウント | `actions` は描画中に呼ばれるただの関数で、要素の `type` にならない。ツリーに入るのは戻り値の `<BookNoteEditLink />` で `type` は毎回同じなので、その場に書いても再マウントは起きない (`Actions={({ note }) => …}` と**コンポーネントとして**その場に書くと `type` が毎回変わり再マウントする) |
+| 段階 3 の判断との関係 | 「抽象が広すぎる」は今も事実だが、フラグは entities に view の判断を漏らす。抽象の広さより層の責務を優先した。次の操作 (メモの削除は api だけある) が来たら `actions` に足すだけで entities は変わらない |
+
+### 確認
+
+```bash
+pnpm --filter web typecheck
+pnpm --filter web test
+pnpm lint
+pnpm format:check
+```
+
+---
+
 ## 未実施
 
 この時点では入れていないもの。それぞれの段階で入れる。

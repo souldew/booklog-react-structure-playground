@@ -126,7 +126,8 @@ entities に置くと、`/dashboard` `/books` `/settings/profile` へのリン�
 
 パスは `shared/routes/routes.ts` の関数 (`routes.bookDetail(id)` など) にまとめてあり、views の `Link` も Server Action の
 `redirect` `revalidatePath` もヘッダーもここから取る (確定済み。規則は conventions の shared の節)。
-ドメインの slice (entities) がリンクを出すときも、URL の形を書かずにこの関数を呼ぶ。`BookNoteList` の編集リンクが最初の例。
+ドメインの slice (entities) は操作へのリンクを自分では出さず、view が `actions` のスロットで渡す
+(メモの編集リンクは `views/book-note-list` の `BookNoteEditLink` が `routes.bookNoteEdit` を呼ぶ)。
 
 ### 現状の構成
 

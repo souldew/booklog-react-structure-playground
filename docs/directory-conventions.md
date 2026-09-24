@@ -182,7 +182,9 @@ slice 名は `{domain}-{action}`。`{domain}` は entities の slice 名 (`book`
 (`apis/`。`fetchBook` `fetchBooks`)、その実体の表示 (`components/`。`BookStatusBadge`、`BookNoteList`)、fixtures。
 views の list と detail で同じものを使う、といった場合に置く
 (`BookNoteList` は `book-detail` と `book-note-list` の両方で使うので `entities/book-note/components/` にある)。
-view ごとに違う部分 (一覧だけが出す編集リンクなど) は `showEditLink` のような props で切り替える。
+view ごとに違う部分 (一覧だけが出す編集リンクなど) は、entities にフラグを持たせて分岐せず、描画する要素を view から渡す
+(`BookNoteList` の `actions?: (note) => ReactNode`)。entities が決めるのは置き場所だけで、操作の中身と行き先は
+使う view が持つ (編集リンクは `views/book-note-list/components/BookNoteEditLink/`)。
 リンク先の URL は文字列で組まず `shared/routes/` の関数から取る (shared の節)。
 
 `{domain}` は views のフォルダ名の `{domain}` と対応させるのが原則。
