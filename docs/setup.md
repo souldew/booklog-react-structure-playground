@@ -859,6 +859,53 @@ curl -s -o /dev/null -w "%{http_code}\n" localhost:8787/dashboard   # 404
 
 ---
 
+## 21. 読書中の本の N+1 を `?include=progress` で解消する
+
+§20 で戻ってきた「読書中の本」の N+1 (本の一覧 → 1 冊ごとに `/books/:bookId/progress`) を、
+`GET /books` にオプトインの include を足して解消した。決めごとは [backend.md §4](backend.md)。
+
+§17 の集約 (`GET /dashboard`) と §20 で保留にした batch (`?book_ids=`) ではなく include にしたのは、
+progress が book 従属の 1:1 で、同一 API が両方を持ち、出発点が常に本の一覧だから。
+batch が固有の強みを持つのは「ID の集合が出発点」(別サービス・検索結果・クライアント状態) の場面で、
+ここはそれに該当しない。パネル単位の Suspense 境界は §20 のまま変わらない。
+
+| 置き場 | 内容 |
+|---|---|
+| `api/src/schemas.ts` | `BookWithProgressSchema` (`BookSchema.extend({ progress: optional })`)。`RecentBookNote` と同じ extend の流儀 |
+| `api/src/routes/books.ts` | `listBooks` に `include` クエリ (enum は `progress` のみ)。指定時は `books JOIN book_progress` の 1 クエリで、各要素に `progress` をネストして返す |
+| `views/dashboard/apis/mappers/toReadingBook.ts` | 生成型 `BookWithProgress` → 画面の型 `ReadingBook`。本と進捗の変換は entities の `toBook` / `toBookProgress` に委譲し、組にするだけ。progress が無い要素は契約違反として throw |
+| `views/dashboard/apis/functions/fetchReadingBooks.ts` | `listBooks({ status: "reading", include: "progress" })` を 1 回呼び、各要素を `toReadingBook` に通す |
+| `ReadingBookListContainer` | `fetchBooks` + `fetchBookProgress` × N の 2 段階から、`fetchReadingBooks` 1 回に |
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| レスポンスはネスト、表現は標準のまま | フラットに混ぜると列名が衝突し、ドメインの境界が構造から消える。画面が使う `current_page` だけに絞るのもやめた。フィールド粒度で画面に結合し、単体取得の `BookProgress` と型・mapper を共有できなくなる |
+| `SELECT b.*` に混ざる進捗の列は parse が落とす | §17 と同じ知見。`BookWithProgressSchema.parse` が未知キーを落とすので、`current_page` が book 側に漏れない |
+| 生成型の `progress` は optional のまま、欠落は throw | クエリ依存の形は OpenAPI で表現できず、include 無しの呼び出しと型を共有するため optional になる (公開 API の SDK はどこも同じ)。「include を付けたのに無い」は api の契約違反なので、`toReadingBook` は黙って落とさず投げる。境界は fail fast、黙殺だけは選ばない。受け皿はルートの `error.tsx` |
+| 組にする場所は view のまま | `entities/book` と `entities/book-progress` は互いを知らない。`ReadingBook` に組むのは画面の型を持つ `views/dashboard` の `apis/` で、§17 の fetchDashboard と同じ置き場。entities の mapper は無変更 |
+| `fetchBookProgress` は残る | `/books/[bookId]/progress` 画面が単体取得で使う。include は一覧の表現のオプションで、単体の口を置き換えるものではない |
+| ダッシュボードの読書中パネルは 1200ms で揃う | 進捗の 200ms が消え、リクエストは 1 + N 回 → 1 回。パネルの解決順 (統計 → 本 → メモ) は変わらない |
+
+### 確認
+
+```bash
+pnpm --filter api typecheck
+pnpm --filter web test              # 67 files / 160 tests
+pnpm --filter web typecheck
+pnpm lint
+pnpm format:check
+```
+
+```bash
+curl -s 'localhost:8787/books?status=reading&include=progress' | jq '.[0] | keys'
+# [..., "progress", ...]
+curl -s 'localhost:8787/books?status=reading' | jq '.[0] | has("progress")'   # false
+```
+
+---
+
 ## 未実施
 
 この時点では入れていないもの。それぞれの段階で入れる。

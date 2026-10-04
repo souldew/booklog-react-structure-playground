@@ -82,6 +82,12 @@ export const BookProgressUpdateSchema = z
   })
   .openapi("BookProgressUpdate");
 
+// GET /books?include=progress の要素。progress は include を付けたときだけ入る。
+// 本の表現 (Book) 自体は変えず、従属リソースの同梱を一覧の表現のオプションとして足す (docs/backend.md §4)。
+export const BookWithProgressSchema = BookSchema.extend({
+  progress: BookProgressSchema.optional(),
+}).openapi("BookWithProgress");
+
 // ダッシュボードの統計。月ごとに、登録した本の冊数と合計ページ数、書いたメモの件数。
 export const BookReadingStatSchema = z
   .object({

@@ -9,6 +9,7 @@ import type {
   Book,
   BookCreate,
   BookUpdate,
+  BookWithProgress,
   ErrorResponse,
   ListBooksParams
 } from '../model';
@@ -16,7 +17,7 @@ import type {
 import { customFetch } from '../../shared/apis/customFetch';
 
 export type listBooksResponse200 = {
-  data: Book[]
+  data: BookWithProgress[]
   status: 200
 }
 

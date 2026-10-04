@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BookStatus } from './bookStatus';
+import type { ListBooksInclude } from './listBooksInclude';
 
 export type ListBooksParams = {
 status?: BookStatus;
@@ -13,4 +14,8 @@ status?: BookStatus;
  * title と author の部分一致
  */
 keyword?: string;
+/**
+ * progress を指定すると各要素に進捗がネストで付く
+ */
+include?: ListBooksInclude;
 };

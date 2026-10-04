@@ -101,7 +101,7 @@ api/
 
 | メソッド | パス | 対応 |
 |---|---|---|
-| `GET` | `/books` | 一覧。`?status=` `?keyword=` で絞り込む |
+| `GET` | `/books` | 一覧。`?status=` `?keyword=` で絞り込む。`?include=progress` で各要素に進捗がネストで付く |
 | `POST` | `/books` | 作成 |
 | `GET` | `/books/:bookId` | 詳細 |
 | `PATCH` | `/books/:bookId` | 更新。一覧のトグルもここを叩く |
@@ -142,6 +142,19 @@ enum の値も同じ理由で snake_case にしてある。`status` の `on_hold
 
 パネルごとに別のエンドポイントを叩き、それぞれ異なる遅延を持たせることで、
 速いパネルから順に出てくる様子を見せる。
+
+### 従属リソースはオプトインの include で同梱する
+
+パネル内の N+1 は、集約エンドポイントではなく**リソースの口の include オプション**で解消する。
+「読書中の本」は本の一覧を取ってから 1 冊ごとに `/books/:bookId/progress` を叩くと 1 + N 回になるので、
+`GET /books?status=reading&include=progress` が `books JOIN book_progress` の 1 クエリで組にして返す。
+
+| 決めごと | 内容 |
+|---|---|
+| オプトイン | 既定では同梱しない。progress を表示しない `/books` 一覧画面に余計な payload を払わせない |
+| ネストで返す | 各要素に `progress` オブジェクトとして入る (`BookWithProgress`)。フラットに混ぜると列名の衝突と、どの列がどのドメインかの境界が消える |
+| 表現は標準のまま | 同梱する progress は `BookProgress` の表現ごと返す。画面が使うフィールドだけに絞ると、API が画面にフィールド粒度で結合する |
+| 結合の向き | `?include=` はリソースの表現のオプションで、画面には紐づかない。画面 1 枚ぶんをまとめる `GET /dashboard` 型の集約とは別物 |
 
 ---
 
