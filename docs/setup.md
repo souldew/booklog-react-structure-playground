@@ -809,13 +809,63 @@ pnpm format:check
 
 ---
 
+## 20. ダッシュボードをパネルごとの取得に戻す
+
+§17 で入れた「1 画面ぶんを 1 回で取る」ルールを見直し、リソース単位のエンドポイントを
+パネルごとに叩く形 (§17 以前) に戻した。`git revert 5dbffce` がベース。
+決めごとは [backend.md §4](backend.md)、境界の位置は [screens.md §5](screens.md) が §17 以前の記述に戻っている。
+
+§17 は N+1 とポップコーン UI を 1 本化でまとめて解いたが、引き換えに
+「速いパネルから順に出る」という境界の粒度の効果が画面から消えていた。
+この repo は構成の比較が目的なので、効果が見える側に倒し直した。
+N+1 (「読書中の本」が 1 冊ごとに `/books/:bookId/progress` を叩く) も §17 以前のまま戻ってくる。
+進捗の一括取得だけを足して解く案は §17 と同じく保留のまま。
+
+| 置き場 | 内容 |
+|---|---|
+| `api/src/routes/` | `dashboard.ts` を消し、`stats.ts` (`/stats/monthly`)・`notes.ts` (`/notes/recent`) を戻した。`ReadingBookSchema` `DashboardSchema` も消えた |
+| `api/src/middleware/delay.ts` | `/stats/monthly` 300ms・`/notes/recent` 1500ms が戻り、`/dashboard` 1200ms は消えた |
+| `entities/book-note` `entities/book-reading-stat` | `fetchRecentBookNotes`・`fetchBookReadingStats` とテストが戻った |
+| `views/dashboard` | `apis/` (fetchDashboard・toDashboard・toReadingBook) と `DashboardPageSkeleton` を削除。3 つの `XxxContainer` と、`Suspense` × 3 を置く `DashboardPageContainer` が戻った |
+| `web/app/dashboard/loading.tsx` | 削除。境界は `PageContainer` 内のパネル単位に戻った |
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| revert がほぼ素直に通った | §17 以降の変更 (§18 §19) とダッシュボードの実装はほぼ独立していた。衝突は docs 2 ファイルと生成物 2 ファイルだけ |
+| 生成物は revert で戻さず流し直す | §18 で OpenAPI の description が変わっているので、revert の生成物はヘッダが古い。`pnpm --filter api openapi` → `pnpm --filter web codegen` で揃えると、戻した `notes` `stats` も §18 以降の description で生成される |
+| `error.tsx` の retry は維持 | §17 の revert が触るのはコメントだけで、f519123 で入れた retry の規約 ([tech-stack.md §4](tech-stack.md)) はそのまま。エラー境界は Suspense と違い画面単位のままなので、コメントの「境界はパネルごとではなく画面単位」は今の構成の説明として正しい |
+| setup.md は履歴なので revert しない | §17 の節は「当時そうした」記録としてそのまま残し、取り消しはこの節で足す。「未実施」の表だけ現状に合わせた |
+| テスト数は §17 以前と一致しない | 155 → 157。revert で戻った分と §19 で足された分が混ざるため |
+
+### 確認
+
+```bash
+pnpm --filter api typecheck
+pnpm --filter web test              # 65 files / 157 tests
+pnpm --filter web typecheck
+pnpm lint
+pnpm format:check
+```
+
+```bash
+curl -s localhost:8787/stats/monthly | jq '.[0]'
+curl -s localhost:8787/notes/recent | jq 'length'
+curl -s -o /dev/null -w "%{http_code}\n" localhost:8787/dashboard   # 404
+```
+
+`/dashboard` を開くと骨格と 3 つの Skeleton が先に出て、統計 (300ms) → 読書中の本 (1200ms + 進捗) → メモ (1500ms) の順に中身へ変わる。
+
+---
+
 ## 未実施
 
 この時点では入れていないもの。それぞれの段階で入れる。
 
 | | 入れる段階 |
 |---|---|
-| `/settings/*` のエンドポイント | 段階 5。ダッシュボードが使う `/dashboard` は api に足してある |
+| `/settings/*` のエンドポイント | 段階 5。`/stats/monthly` `/notes/recent` は api に足してある |
 | BFF (`web/app/api/` の Route Handler) を挟む経路 | [backend.md §7](backend.md)。ブラウザから取る画面が無くなったので、クライアント取得を入れ直す判断とセット ([tech-stack.md §4](tech-stack.md)) |
 | `api` の Vitest (`app.request()`、DB の分離、`API_DELAY=0`) | 未定。web 側のスタブは「web はこう送る」しか担保しないので、契約の反対側として要る |
 | フォームライブラリ Conform (`@conform-to/react` + `@conform-to/zod`) | 段階 3 でフォームが 3 つになった。入れるかどうかは判断待ち。現状の残り定型と判断材料は [tech-stack.md §5](tech-stack.md) |
