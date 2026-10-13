@@ -3,21 +3,24 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { isCurrentPath } from "@/shared/lib/isCurrentPath";
 import { routes } from "@/shared/routes/routes";
+
+type NavLink = {
+  href: string;
+  label: string;
+  /** 現在地とみなすセクションの根。省略すると href。リンク先がセクションの根ではないときに指定する */
+  section?: string;
+};
 
 // グローバルナビのリンク一覧。画面が増えたらここに足す (docs/screens.md §7)。
 // パスは文字列で書かず shared/routes から取る。
-const NAV_LINKS = [
+// 設定はリンク先がタブの 1 つ目 (/settings/profile) なので、/settings/notifications でも現在地になるよう section を持つ。
+const NAV_LINKS: readonly NavLink[] = [
   { href: routes.dashboard(), label: "ダッシュボード" },
   { href: routes.books(), label: "本" },
-] as const;
-
-// 現在地の判定。/books のリンクは /books/1 のような下の階層でも現在地とみなす。
-// ただし / (ルート) は完全一致だけ。前方一致にすると全ページで現在地になる。
-function isCurrent(pathname: string, href: string): boolean {
-  if (href === routes.home()) return pathname === href;
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
+  { href: routes.settingsProfile(), label: "設定", section: routes.settings() },
+];
 
 // 静的なリンクだけを並べる。ユーザー情報など取得が要るものは持たない (それは widgets の仕事)。
 // usePathname を読むので Client Component。通信はしないので Presentational。
@@ -30,7 +33,7 @@ export function GlobalNav() {
         booklog
       </Link>
       {NAV_LINKS.map((link) => {
-        const current = isCurrent(pathname, link.href);
+        const current = isCurrentPath(pathname, link.section ?? link.href);
         return (
           <Link
             key={link.href}
