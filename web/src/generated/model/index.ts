@@ -21,4 +21,8 @@ export * from './errorResponse';
 export * from './listBooksInclude';
 export * from './listBooksParams';
 export * from './listRecentNotesParams';
+export * from './notificationSettings';
+export * from './notificationSettingsUpdate';
+export * from './profileSettings';
+export * from './profileSettingsUpdate';
 export * from './recentBookNote';
