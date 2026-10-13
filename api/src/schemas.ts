@@ -103,6 +103,37 @@ export const RecentBookNoteSchema = BookNoteSchema.extend({
   book_title: z.string(),
 }).openapi("RecentBookNote");
 
+// 設定はユーザーにつき 1 つの単一リソース。id を返さず、PUT で全体を置き換える。
+export const ProfileSettingsSchema = z
+  .object({
+    display_name: z.string(),
+    bio: z.string(),
+  })
+  .openapi("ProfileSettings");
+
+export const ProfileSettingsUpdateSchema = z
+  .object({
+    display_name: z.string().min(1),
+    bio: z.string(),
+  })
+  .openapi("ProfileSettingsUpdate");
+
+// DB は 0 / 1 の整数で持つが、API では真偽値で返す。SQLite に真偽値の型が無いのは DB の都合で、API の表現には出さない。
+const notificationSettingsShape = {
+  reading_reminder: z.boolean(),
+  weekly_summary: z.boolean(),
+  note_digest: z.boolean(),
+};
+
+export const NotificationSettingsSchema = z
+  .object(notificationSettingsShape)
+  .openapi("NotificationSettings");
+
+// PUT は置き換えなので全項目が必須。いまは応答と同じ形だが、生成型を分けておく (mapper を 1 生成型 1 関数にするため)。
+export const NotificationSettingsUpdateSchema = z
+  .object(notificationSettingsShape)
+  .openapi("NotificationSettingsUpdate");
+
 export const BookIdParamSchema = z.object({
   bookId: z.string().openapi({ param: { name: "bookId", in: "path" }, example: "1" }),
 });

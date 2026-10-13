@@ -5,6 +5,8 @@ import { bookNotes } from "./routes/bookNotes.ts";
 import { bookProgress } from "./routes/bookProgress.ts";
 import { books } from "./routes/books.ts";
 import { notes } from "./routes/notes.ts";
+import { notificationSettings } from "./routes/notificationSettings.ts";
+import { profileSettings } from "./routes/profileSettings.ts";
 import { stats } from "./routes/stats.ts";
 
 export const openApiInfo = {
@@ -28,5 +30,7 @@ app.route("/", bookNotes);
 app.route("/", bookProgress);
 app.route("/", stats);
 app.route("/", notes);
+app.route("/", profileSettings);
+app.route("/", notificationSettings);
 
 app.doc31("/doc", openApiInfo);

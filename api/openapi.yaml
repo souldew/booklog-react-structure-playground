@@ -170,6 +170,53 @@ components:
               type: string
           required:
             - book_title
+    ProfileSettings:
+      type: object
+      properties:
+        display_name:
+          type: string
+        bio:
+          type: string
+      required:
+        - display_name
+        - bio
+    ProfileSettingsUpdate:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+        bio:
+          type: string
+      required:
+        - display_name
+        - bio
+    NotificationSettings:
+      type: object
+      properties:
+        reading_reminder:
+          type: boolean
+        weekly_summary:
+          type: boolean
+        note_digest:
+          type: boolean
+      required:
+        - reading_reminder
+        - weekly_summary
+        - note_digest
+    NotificationSettingsUpdate:
+      type: object
+      properties:
+        reading_reminder:
+          type: boolean
+        weekly_summary:
+          type: boolean
+        note_digest:
+          type: boolean
+      required:
+        - reading_reminder
+        - weekly_summary
+        - note_digest
   parameters: {}
 paths:
   /books:
@@ -487,4 +534,60 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/RecentBookNote"
+  /settings/profile:
+    get:
+      tags: &a4
+        - profile-settings
+      operationId: getProfileSettings
+      responses:
+        "200":
+          description: プロフィール
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileSettings"
+    put:
+      tags: *a4
+      operationId: updateProfileSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileSettingsUpdate"
+      responses:
+        "200":
+          description: 更新後のプロフィール
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileSettings"
+  /settings/notifications:
+    get:
+      tags: &a5
+        - notification-settings
+      operationId: getNotificationSettings
+      responses:
+        "200":
+          description: 通知の設定。通知の種類ごとに受け取るかどうか
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationSettings"
+    put:
+      tags: *a5
+      operationId: updateNotificationSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationSettingsUpdate"
+      responses:
+        "200":
+          description: 更新後の通知の設定
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationSettings"
 webhooks: {}
