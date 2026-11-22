@@ -13,4 +13,8 @@ export const routes = {
   bookNoteNew: (bookId: string) => `/books/${bookId}/notes/new`,
   bookNoteEdit: (bookId: string, noteId: string) => `/books/${bookId}/notes/${noteId}/edit`,
   bookProgress: (bookId: string) => `/books/${bookId}/progress`,
+  // セクションの根。画面は持たず、タブの 1 つ目へ redirect する。ナビの現在地の判定にも使う
+  settings: () => "/settings",
+  settingsProfile: () => "/settings/profile",
+  settingsNotifications: () => "/settings/notifications",
 } as const;

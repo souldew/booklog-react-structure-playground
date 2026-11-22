@@ -17,4 +17,10 @@ describe("routes", () => {
     expect(routes.bookDetail("1")).toBe("/books/1");
     expect(routes.bookEdit("1")).toBe("/books/1/edit");
   });
+
+  it("設定のタブは静的セグメントで、どちらにも id が付かない", () => {
+    expect(routes.settings()).toBe("/settings");
+    expect(routes.settingsProfile()).toBe("/settings/profile");
+    expect(routes.settingsNotifications()).toBe("/settings/notifications");
+  });
 });

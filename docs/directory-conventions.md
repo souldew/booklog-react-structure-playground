@@ -126,6 +126,7 @@ Container を分け、`pages/` にフラットに並べる。
 どの Page にも属さないので app 層 (`src/app/layouts/`)。Page が自分の中身として描く枠状の部品 (`FormPageLayout` のように
 `title` や `backHref` を Page から受けるもの) は「複数の画面で使う部品」であって枠ではないので、shared に置く。
 判別は「Page がそれを返しているか (部品)、Page がその中に描かれているか (枠)」。
+セクションの枠も同じ扱いで、`/settings` 配下のタブバー (`SettingsLayout`) は app 層に置き、`web/app/settings/layout.tsx` がマウントする。
 
 層の名前を `pages/` にしないのは、Next.js が `src/pages/` を Pages Router として拾うため。
 

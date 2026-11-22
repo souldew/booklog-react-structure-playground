@@ -35,13 +35,28 @@ export const OnBookDetail: Story = {
   },
 };
 
-// ナビに無いパスにいるとき。どのリンクも強調されない。
-export const Elsewhere: Story = {
+// 設定のリンク先は 1 つ目のタブ (/settings/profile) だが、2 つ目のタブにいても「設定」が現在地になる。
+export const OnSettingsNotifications: Story = {
   parameters: {
-    nextjs: { navigation: { pathname: "/settings/profile" } },
+    nextjs: { navigation: { pathname: "/settings/notifications" } },
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole("link", { name: "本" })).not.toHaveAttribute("aria-current");
+    const settings = canvas.getByRole("link", { name: "設定" });
+    await expect(settings).toHaveAttribute("href", "/settings/profile");
+    await expect(settings).toHaveAttribute("aria-current", "page");
+  },
+};
+
+// ナビに無いパスにいるとき。どのリンクも強調されない。
+export const Elsewhere: Story = {
+  parameters: {
+    nextjs: { navigation: { pathname: "/unknown" } },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const link of canvas.getAllByRole("link")) {
+      await expect(link).not.toHaveAttribute("aria-current");
+    }
   },
 };

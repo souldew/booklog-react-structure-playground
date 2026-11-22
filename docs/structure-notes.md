@@ -171,6 +171,7 @@ import の向きは `app > widgets > entities > shared` の一方向で、shared
 将来 `entities/book-note` の未読件数を足すときも `GlobalHeader` が並べるだけで、`GlobalNav` は変わらない。
 静的なリンクだけの間は現状のままにし、データが要る部品が出た時点でこの形に移す。
 段階 4 (`/dashboard`) と段階 5 (`/settings`) でナビに足すのは `GlobalNav` の `NAV_LINKS` への 1 行ずつ。
+段階 5 では「設定」のリンク先 (`/settings/profile`) とセクションの根 (`/settings`) が分かれたので、`NAV_LINKS` の要素に `section` を足し、現在地の判定を根で行うようにした。
 
 ---
 
@@ -217,6 +218,21 @@ Server Action は 6 本になった。
 
 分けるなら今が機械的に済む最後の機会で、段階 4 (`/dashboard`) は取得だけなので Server Action は増えず、段階 5 (`/settings`) で 2 本増える。
 現状は分けずに据え置き。
+
+### 段階 5 の時点
+
+Server Action は 8 本になった。増えた 2 本は `views/settings-profile` の `updateProfileSettings` と
+`views/settings-notifications` の `updateNotificationSettings` で、それぞれ別のエンドポイント (`PUT /settings/profile` `PUT /settings/notifications`) を叩く。
+重複は `PATCH /books/:id` の 1 箇所のまま増えていない。
+
+| 置き場 | Server Action | 画面の都合 |
+|---|---|---|
+| `views/settings-profile/apis/functions/` | `updateProfileSettings` | 検証、`revalidatePath` × 1。redirect せず保存後の値と `saved` を返す |
+| `views/settings-notifications/apis/functions/` | `updateNotificationSettings` | 送られない checkbox を false と読む、`revalidatePath` × 1。redirect しない |
+
+この 2 本は `fetchXxx` と同じ `apis/functions/` に、同じ view の中で並んでいる (`fetchProfileSettings` と `updateProfileSettings`)。
+同居の件数は `fetchXxx` 6 本、Server Action 8 本になった。分けたときに entities へ出るラッパーも、設定の 2 つは利用者が 1 つずつなので view に残る。
+「重複が消える」効用は段階 3 から変わらず 1 箇所分で、据え置きを続ける。
 
 ---
 

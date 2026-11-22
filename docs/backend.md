@@ -132,6 +132,9 @@ enum の値も同じ理由で snake_case にしてある。`status` の `on_hold
 `BookStatus.on_hold` のままで、ドメインの `onHold` との対応表を mapper が持つ。
 対応表に `satisfies Record<生成型, ドメイン型>` を付けておくと、API に値が増えたときに抜けがコンパイルエラーになる。
 
+真偽値は例外で、`notification_settings` の 0 / 1 は API では `true` / `false` で返す。SQLite に真偽値の型が無いのは DB の都合で、
+変換の実体は名前 (`reading_reminder → readingReminder`) のほうで足りる。
+
 バリデーションに失敗したリクエストは 400 で `{ message, issues }` を返す。
 存在しない本やメモは 404 で `{ message }` を返す。
 
