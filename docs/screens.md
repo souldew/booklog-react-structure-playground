@@ -158,6 +158,8 @@ Book と 1:N。コレクションにする根拠。
 | `/books/[bookId]/notes/new` | 全部 | **なし** |
 | `/books/[bookId]/notes/[noteId]/edit` | フォームの枠 | フィールド |
 | `/books/[bookId]/progress` | フォームの枠 | フィールド。**作成が無いので常に境界がある** |
+| `/settings/profile` | 見出し・タブバー (レイアウト) | フィールド |
+| `/settings/notifications` | 見出し・タブバー (レイアウト) | 項目 |
 
 `/books/new` と `/books/[bookId]/edit` を並べると、**作成側には Container も Suspense も
 無い**ことが差分として現れる。これが段階 2 の主眼。
@@ -207,3 +209,14 @@ story で繋がりを検証できなくなる。
 
 `/settings` 配下のタブバーがレイアウトにあることで、**タブであることを view 側が
 知らなくてよい**状態になる。`settings-notifications` は自分がタブの中身だと知らない。
+
+| 置き場 | 持つもの |
+|---|---|
+| `web/app/settings/layout.tsx` | `SettingsLayout` をマウントするだけ |
+| `src/app/layouts/SettingsLayout/` | 見出し「設定」とタブの並び。Page の外側にあってタブを切り替えても残る枠なので、`AppLayout` と同じ app 層 |
+| `shared/components/TabNav/` | リンクの列と現在地の強調。どのタブがあるかは知らない |
+| `views/settings-profile` `views/settings-notifications` | 見出しとフォームだけ。タブバーもタブへのリンクも持たない |
+
+`/settings` 自体は画面を持たず、`/settings/profile` へ redirect する。
+グローバルナビの「設定」はリンク先が `/settings/profile` で、現在地の判定は `/settings` の前方一致で行う。
+`web/app/settings/error.tsx` はレイアウトの内側に入るので、取得に失敗してもタブバーは残る。

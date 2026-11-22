@@ -130,6 +130,7 @@ API スキーマの変更を mapper で止めるため。Container まで生成�
 | 状態 (`BookFormState`) | `values` `fieldErrors` `message`。成功時は `redirect` で抜けるので、この型が返るのは検証か通信に失敗したときだけ |
 | 検証 | zod のスキーマ (`model.ts` の `BookFormSchema`) を Server Action の中の純粋関数 (`lib/parseBookForm.ts`) から使う。項目ごとのメッセージは `z.flattenError` で取り、最初の 1 つだけ出す。`<form noValidate>` でブラウザの制約検証は切る。切らないと `min` などで送信前に止まり、こちらのメッセージが出ない |
 | 送信後の再表示 | React は action の後に form をリセットするので、入力欄の `defaultValue` は action が返した `values` から取り直す |
+| 入力中の値を描画に使う項目 | その項目だけ `useState` の制御コンポーネントにする (`ProfileSettingsForm` の自己紹介と残り文字数)。送信後のリセットは制御コンポーネントに効かないので、action が返した `values` に描画中に揃え直す
 | `disabled` の扱い | 編集画面の状態 (`status`) は一覧のトグルで変えるので select を `disabled` にする。`disabled` な input は FormData に含まれないため、`parseBookForm` は無いことをエラーにせず「送られなかった」として返し、`toBookUpdate` は body から外す。API の PATCH は部分更新なので既存の値が保たれる |
 | 成功後 | `revalidatePath` で一覧 (編集は詳細も) を再検証し、詳細へ `redirect` する。`redirect` は throw で抜けるので `try` の外に置く |
 
@@ -168,6 +169,21 @@ Conform を入れると消えるのは下の 3 行で、上の 3 行は shared �
 フォームごとの差 (`disabled` な status の引き継ぎ、`totalPages` を受けるスキーマ) は Conform でも `parseWithZod` に渡すスキーマ側に書く。
 
 段階 5 の `/settings/profile` `/settings/notifications` で 5 つになる。入れるならそこが次の区切り。
+
+### 段階 5 の時点 (判断待ち)
+
+フォームは 5 つになったが、定型が 5 回並んだわけではない。増えた 2 つは形が分かれた。
+
+| フォーム | 手書きの定型 | Conform で消えるもの |
+|---|---|---|
+| `ProfileSettingsForm` | `book-note-form` と同じ形。`parseXxxForm`、項目ごとの `aria-*`、`XxxFormState` の自作 | 段階 3 の表の下 3 行がそのまま |
+| `NotificationSettingsForm` | checkbox 3 つ。`formData.has()` で真偽値にするだけで、検証もスキーマも `fieldErrors` も無い | ほぼ無い。`parseWithZod` に `z.boolean()` を渡すために、かえってスキーマが増える |
+
+新しく出た差は、成功しても redirect しないフォームが 2 つあること。`XxxFormState` に `saved` を足し、
+保存後の値を `values` で返している。Conform では `submission.reply()` に `resetForm` を渡して返す形になり、ここは置き換えで減らない。
+
+「定型が N 回並んだら入れる」の N は、文字列の項目と検証を持つフォームで数えると 4 つ。
+`disabled` の論点を手書きで見せる理由は変わっていないので、保留のままにする。
 
 
 ---

@@ -906,16 +906,102 @@ curl -s 'localhost:8787/books?status=reading' | jq '.[0] | has("progress")'   # 
 
 ---
 
+## 22. 段階 5: `/settings/profile` と `/settings/notifications`
+
+コードは手で書いた。DB のテーブル (`profile_settings` `notification_settings`) とシードは段階 0 で作ってあったので、
+api にエンドポイントを足し、型を生成し直してから web を足した。
+主眼はタブ分割とレイアウトの責務で、タブであることを知っているのは `/settings` のレイアウトだけになる。
+
+```
+web/app/settings/
+├── layout.tsx                  SettingsLayout (見出し + タブバー) をマウント。タブを切り替えても残る
+├── page.tsx                    /settings → /settings/profile へ redirect
+├── error.tsx                   レイアウトの内側。失敗してもタブバーは残る
+├── profile/page.tsx            → views/settings-profile
+└── notifications/page.tsx      → views/settings-notifications。複数形だが id は無い
+```
+
+| 置き場 | 置いたもの |
+|---|---|
+| `api/src/routes/` | `profileSettings.ts` (`GET` `PUT /settings/profile`)、`notificationSettings.ts` (`GET` `PUT /settings/notifications`)。行は id = 1 に固定されていて必ずあるので 404 を持たない |
+| `api/src/schemas.ts` | `ProfileSettings` `ProfileSettingsUpdate` `NotificationSettings` `NotificationSettingsUpdate`。通知は DB の 0 / 1 を API では真偽値で返す |
+| `shared/routes/routes.ts` | `settings` (セクションの根) `settingsProfile` `settingsNotifications` |
+| `shared/lib/isCurrentPath.ts` | `GlobalNav` の中にあった現在地の判定を出した。`TabNav` からも使うため |
+| `shared/components/TabNav/` | URL の静的セグメントをタブとして並べるリンクの列。`usePathname` で現在地に `aria-current="page"` を付ける |
+| `shared/components/GlobalNav/` | 「設定」を足した。リンク先は `/settings/profile` だが、現在地の判定は `section: "/settings"` で行う |
+| `src/app/layouts/SettingsLayout/` | 見出し「設定」と `TabNav`。タブの並びはここが持つ |
+| `views/settings-profile/` | `model.ts` (ドメイン型 `ProfileSettings`、スキーマ、上限値)、`apis/` (`fetchProfileSettings` `updateProfileSettings`、mapper 2 つ)、`lib/` (parse と toFormValues)、`components/ProfileSettingsForm/` (+ Container)、`components/ProfileSettingsFormSkeleton/`、`pages/` に Page と Container 1 つ、`fixtures/` |
+| `views/settings-notifications/` | 同じ形。`model.ts` に `NOTIFICATION_KINDS`。`lib/` は parse だけで、toFormValues と検証のスキーマは無い |
+
+Server Action の引数を並べると、id の有無が URL の差のまま出る。
+
+```ts
+updateBookProgress(bookId, totalPages, state, formData) // 本に従属する単一リソース。PUT /books/:bookId/progress
+updateProfileSettings(state, formData)                  // ユーザーに 1 つの単一リソース。PUT /settings/profile。bind が無い
+```
+
+### 書いたもの
+
+| 種別 | ファイル |
+|---|---|
+| story | `TabNav` (1 つ目と 2 つ目のタブ)、`SettingsLayout`、`GlobalNav` に `OnSettingsNotifications` を追加、`ProfileSettingsForm` (Default・Saved・残り文字数・書き直すと検証エラーが消える・保存後に値が揃い直る・検証エラー・API 失敗)、`ProfileSettingsFormSkeleton`、`SettingsProfilePage` (Default・Loading・NoLayoutShift)、`NotificationSettingsForm` (Default・Saved・API 失敗)、`NotificationSettingsFormSkeleton`、`SettingsNotificationsPage` (Default・Loading・NoLayoutShift) |
+| test | `isCurrentPath`、`routes` (設定のパス)、`toProfileSettings` `toProfileSettingsUpdate`、`parseProfileSettingsForm` (空白の除去、空の表示名、上限の境界)、`remainingBioLength` (空白を数えない、上限超えで負、検証の結果と一致する)、`toProfileSettingsFormValues`、`fetchProfileSettings`、`updateProfileSettings` (id 無しのパスに PUT、`revalidatePath`、`saved` の付け外し)、`toNotificationSettings` `toNotificationSettingsUpdate`、`parseNotificationSettingsForm` (送られないキーは false)、`fetchNotificationSettings`、`updateNotificationSettings` (オフの項目も false で送る) |
+
+### 気づいた点
+
+| 現象 | 対処・理由 |
+|---|---|
+| タブバーの置き場 | Page の外側にあり、タブを切り替えても再マウントされない枠なので、`AppLayout` と同じ基準で app 層 (`src/app/layouts/SettingsLayout`) に置いた。`books/layout.tsx` が Provider だけをマウントするのに対し、`settings/layout.tsx` は UI の枠をマウントする。どちらも `web/app` は結線だけ |
+| view はタブであることを知らない | `SettingsProfilePage` は見出し「プロフィール」とフォームを描くだけで、タブバーもリンクも持たない。Page の story にナビゲーションが出ないことを play で確かめている。タブを足す・外すときに触るのは `SettingsLayout` の配列と `routes` だけ |
+| タブを `role="tablist"` にしない | 切り替えは画面遷移で、どのタブが選ばれているかは URL だけが持つ。ARIA のタブは同じ画面の中でパネルを切り替える部品なので、リンクの列 (`nav`) と `aria-current` にした |
+| グローバルナビの「設定」が 2 つ目のタブで現在地にならない | リンク先 (`/settings/profile`) で前方一致を取ると `/settings/notifications` が外れる。リンク先と現在地の判定を分け、`NAV_LINKS` に `section` を持たせた。`/settings` には 1 つ目のタブへ redirect する page を置いた。URL を手で削ったときに 404 にしないため |
+| 設定の型と通信は entities に置かない | `ProfileSettings` も `NotificationSettings` も使う画面が 1 つずつで、共有が無い。「該当物が出るまで作らない」に従い、ドメイン型・`fetchXxx`・fixtures を view の中に置いた。ヘッダーに表示名を出すような 2 つ目の利用者が来たら `entities/profile-settings` に出す |
+| 自己紹介の残り文字数を入力中に出す | 入力中の値を描画に使うので、自己紹介だけ `useState` で持つ制御コンポーネントにした。他の項目は `defaultValue` のまま FormData から読む。数え方は `lib/remainingBioLength` に出し、スキーマと同じく前後の空白を落としてから数える。揃えないと「残り 0 文字」なのに保存で上限超えになる。判定は表示だけで送信は止めず、保存時の検証は Server Action が持つ |
+| 制御コンポーネントは送信後のリセットの対象外 | React が action の後にリセットするのは `defaultValue` の入力欄だけ。保存すると api は前後の空白を落とした値を返すので、`useState` の値を action が返した `values` に揃え直す必要がある。Effect ではなく、描画中に前回の `values` と比べて `setBio` する (React の「props の変化で state を調整する」形) |
+| 書き直したあとも前回の検証エラーが残る | エラーは送信した値についてのもので、書き直すと残り文字数の判定と食い違う (「残り 145 文字」と「160 文字以内で入力してください」が並ぶ)。「書き直したか」を新しい state で持たず、`bio === values.bio` (action が返した値から変わっていない) のときだけエラーを出す形で導いた |
+| 保存しても画面を離れない | 戻り先 (詳細や一覧) が無いので redirect せず、Server Action が保存後の値と `saved: true` を返す。`XxxFormState` の「成功時は redirect するので返るのは失敗のときだけ」という前提が初めて崩れた。結果は `role="status"` に「保存しました」と出し、次の送信で消える |
+| id も bind も notFound も無い | ユーザーが 1 人で行が必ずあるので、Container は取得して渡すだけ、Server Action は `(state, formData)` のまま、`fetchXxx` は `undefined` を返さない。book-progress-form と同じ単一リソースでも、親 (本) に従属しない分だけ組み立て層が薄い |
+| チェックを外した checkbox は送信されない | 段階 2 の「`disabled` な input は送信されない」と同じ現象で、意味が逆になる。book-form は「送られない = 変えない」で PATCH から外し、通知は「送られない = オフ」で PUT に false を入れる。解釈は `parseNotificationSettingsForm` が持つ |
+| 通知のフォームの値は真偽値のまま | 他のフォームは入力したままの文字を再表示するために文字列で持つが、checkbox にはその必要が無い。フォームの値の型がドメイン型と同じ形になったので、`toXxxFormValues` を置かず Container がそのまま渡す。不正な値も入らないので `fieldErrors` とスキーマも無い |
+| checkbox は shadcn を使わず素の `input` | Base UI の Checkbox は隠し input を自前で持つ。React が action の後に form をリセットしたとき `defaultChecked` との整合を自分で取る必要が出るので、select と同じく native にした |
+| `error.tsx` が 3 つ目になった | `books` `dashboard` と同じマークアップで、見出しの階層だけ違う (レイアウトが h1 を持つので h2)。conventions の「規約上マークアップが要るものは shared の部品を呼ぶだけ」には 3 つとも沿っていない。今回は揃えず「未実施」に足した |
+| フォームが 5 つ、Server Action が 8 本になった | [tech-stack.md §5](tech-stack.md) と [structure-notes.md §5](structure-notes.md) が「次の区切り」としていた時点。どちらも判断材料を追記して保留のままにした |
+
+### 確認
+
+```bash
+pnpm --filter api typecheck
+pnpm --filter web test              # 88 files / 211 tests
+pnpm --filter web typecheck
+pnpm lint
+pnpm format:check
+```
+
+```bash
+curl -s localhost:8787/settings/profile
+curl -s -X PUT -H 'Content-Type: application/json' -d '{"display_name":"","bio":""}' localhost:8787/settings/profile   # 400
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' localhost:3000/settings                                         # 307 → /settings/profile
+```
+
+ヘッドレスブラウザで次を確かめた。`/settings` は `/settings/profile` へ redirect する。表示名を空にして送ると項目のエラーが出る。
+値を入れて送ると画面に留まって「保存しました」が出て、api の `display_name` が変わる。
+自己紹介は入力のたびに残り文字数が変わり、上限を超えると赤で超えた分が出る。そのまま送ると検証のエラーも並び、上限内に書き直すとエラーは消えて残り文字数だけになる。タブの「通知」に移ると、見出しとタブバーは
+再マウントされずに残り、`aria-current` は「設定」(グローバル) と「通知」(タブ) に付く。読書のリマインダーを外してメモの振り返りを付けて
+保存すると、api は `reading_reminder: false` `note_digest: true` になる。確認後は PUT でシードの値に戻した。
+取得の失敗で `settings/error.tsx` に落ちてタブバーが残ることは、web から api の失敗を起こす口が無いので画面では確かめていない。
+
+---
+
 ## 未実施
 
-この時点では入れていないもの。それぞれの段階で入れる。
+この時点では入れていないもの。
 
-| | 入れる段階 |
+| | 状況 |
 |---|---|
-| `/settings/*` のエンドポイント | 段階 5。`/stats/monthly` `/notes/recent` は api に足してある |
 | BFF (`web/app/api/` の Route Handler) を挟む経路 | [backend.md §7](backend.md)。ブラウザから取る画面が無くなったので、クライアント取得を入れ直す判断とセット ([tech-stack.md §4](tech-stack.md)) |
 | `api` の Vitest (`app.request()`、DB の分離、`API_DELAY=0`) | 未定。web 側のスタブは「web はこう送る」しか担保しないので、契約の反対側として要る |
-| フォームライブラリ Conform (`@conform-to/react` + `@conform-to/zod`) | 段階 3 でフォームが 3 つになった。入れるかどうかは判断待ち。現状の残り定型と判断材料は [tech-stack.md §5](tech-stack.md) |
-| Server Action を `apis/functions/` から `actions/` に分ける | 段階 3 で Server Action が 6 本になった。判断待ち。本数と重複の箇所は [structure-notes.md §5](structure-notes.md) |
+| フォームライブラリ Conform (`@conform-to/react` + `@conform-to/zod`) | 段階 5 でフォームが 5 つになった。入れるかどうかは判断待ち。現状の残り定型と判断材料は [tech-stack.md §5](tech-stack.md) |
+| Server Action を `apis/functions/` から `actions/` に分ける | 段階 5 で Server Action が 8 本になった。判断待ち。本数と重複の箇所は [structure-notes.md §5](structure-notes.md) |
 | メモの削除 (`DELETE /books/:bookId/notes/:noteId`) | api にはあるが画面は未実装。一覧の行にインライン操作として置くなら `BookRow` の読了トグルと同じ形 (行単位の pending / error) になる |
 | 詳細画面に進捗を出す | 進捗はダッシュボードの「読書中の本」に出るが、詳細には現れない。出すなら 3 つ目の Suspense 境界として `BookDetailPage` に足す。読了率の計算は `entities/book-progress/lib/progressPercent` がある |
+| `error.tsx` のマークアップを shared に出す | `books` `dashboard` `settings` の 3 つが同じマークアップを直接持っている。conventions は「shared の部品を呼ぶだけ」としている。見出しの階層 (h1 / h2) だけが違う |
